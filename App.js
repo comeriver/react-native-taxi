@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import {YellowBox} from 'react-native';
-import { AppLoading, Font, Asset } from 'expo';
+import { AppLoading } from 'expo';
+import { Asset } from 'expo-asset';
+import * as Font from 'expo-font';
 import { createAppContainer, createStackNavigator } from 'react-navigation';
 import HomeScreen from './screens/HomeScreen';
 import Login from './screens/Login';
@@ -10,7 +12,7 @@ YellowBox.ignoreWarnings([
     'Unrecognized WebSocket connection option(s) `agent`, `perMessageDeflate`, `pfx`, `key`, `passphrase`, `cert`, `ca`, `ciphers`, `rejectUnauthorized`. Did you mean to put these under `headers`?'
 ]);
 
-/* const RootStack = createStackNavigator(
+ const RootStack = createStackNavigator(
   {
     Login: {
       screen: Login,
@@ -30,7 +32,26 @@ YellowBox.ignoreWarnings([
   }
 ); 
 
-const AppContainer = createAppContainer(RootStack); */
+import PageCarton from './pagecarton.js'
+
+// const protocol = 'https://'
+const domain = 'www.comeriver.com'
+// const port = ':80'
+// const path = '/'
+const pc = PageCarton.setup(
+    {
+        domain
+    }
+);
+//  How to retrieve posts
+/* PageCarton.getServerResource( { name: "posts" } ).then( ( data ) =>
+{
+    console.log( data );
+})
+ */
+
+
+const AppContainer = createAppContainer(RootStack); 
 
 export default class App extends Component {
   constructor(props){

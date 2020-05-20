@@ -26,7 +26,6 @@ const styles = StyleSheet.create({
     alignSelf: "center"
   },
   bottomButtonText: {
-    fontFamily: Platform.OS === 'android' ? 'sans-serif-light' : 'Poppins',
     fontSize: 25,
     color: "white",
     fontWeight: "600"

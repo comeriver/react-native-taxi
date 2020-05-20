@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
 
     choiceText: {
       color: 'rgb(25, 31, 76)',
-      fontFamily: 'Poppins',
+      
       fontSize: 32
     }
   });

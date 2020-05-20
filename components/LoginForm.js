@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
         height: 50,
         borderWidth: 2,
         borderColor: '#4bc1bc',
-        fontFamily: 'Poppins',
+        
         padding: 10,
         marginBottom: 10,
         marginHorizontal: 5,
@@ -59,8 +59,7 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         textAlign: 'center',
-        fontSize: 23,
-        fontFamily: 'Poppins'
+        fontSize: 23
     },
     formLabel: {
       fontSize: 23,

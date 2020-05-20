@@ -10,7 +10,7 @@ export default class Login extends Component {
   constructor(props){
       super(props);
       this.state = {
-          email: 'johnbrian609@gmail.com',
+          email: 'example@gmail.com',
           password: 'MySuperSecretPassword!',
           errorMessage: ''
       }
@@ -76,7 +76,6 @@ const styles = StyleSheet.create({
       fontSize: 18,
       color: 'red',
       fontWeight: 'bold',
-      fontFamily: 'Poppins'
     },
 
     headerText: {
@@ -86,7 +85,6 @@ const styles = StyleSheet.create({
       marginBottom: 10,
       textAlign: 'center',
       fontWeight: "200",
-      fontFamily: 'Poppins'
     },
     logo: {
       width: 300,

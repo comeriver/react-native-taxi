@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
-import { Permissions, Location } from 'expo';
+import * as Location from 'expo-location';
 import { Platform, Alert } from 'react-native';
+import * as Permissions from 'expo-permissions';
 
 
 export default function genericContainer(WrappedComponent){
@@ -15,13 +16,13 @@ export default function genericContainer(WrappedComponent){
         }
 
         componentDidMount() {
-            this._getLocationAsync();    
+            this._getLocationAsync();  
         }
 
         _getLocationAsync = async () => {
             let { status, permissions } = await Permissions.askAsync(Permissions.LOCATION);
             if (status !== 'granted') {
-              Alert.alert('Taxi App needs to use your location to show routes and get taxis. Pleas allow in Settings')
+              Alert.alert('We needs to use your location to show routes and get a ride. Please allow in Settings')
               this.setState({
                 locationResult: 'Permission to access location was denied.',
                 location,

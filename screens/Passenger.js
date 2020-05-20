@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image} from 'react-native';
-import { MapView } from 'expo';
+import MapView from 'react-native-maps';
 import PolyLine from '@mapbox/polyline';
-import apiKey from '../googleapikey';
+import Constants from 'expo-constants'
 import _ from 'lodash';
 import socketIO from 'socket.io-client';
 import BottomButton from '../components/BottomButton';
@@ -29,7 +29,8 @@ export default class Passenger extends Component {
 
 
   async onChangeDestination(destination){
-    const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${apiKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
+    const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Constants.manifest.android.config.googleMaps.apiKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
+//    console.log( apiUrl );
     try{
       const result = await fetch(apiUrl);
       const json = await result.json();
@@ -46,10 +47,11 @@ export default class Passenger extends Component {
   async getRouteDirections(destinationPlaceId, destinationName){
     try{
       // console.log(this.state.predictions);
-      const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${apiKey}`;
+      const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Constants.manifest.android.config.googleMaps.apiKey}`;
+
       const response = await fetch(apiUrl);
       const json = await response.json();
-      console.log(json);
+ //     console.log(json);
       const points = PolyLine.decode(json.routes[0].overview_polyline.points);
       const pointCoords = points.map((point) => {
         return {latitude: point[0], longitude: point[1]}
@@ -86,6 +88,8 @@ export default class Passenger extends Component {
   }
 
   render() {
+
+    //console.log( Constants.manifest.android.config.googleMaps.apiKey );
     let getDriver = null;
     let findingDriverActIndicator = null;
     let driverMarker = null;
@@ -103,7 +107,7 @@ export default class Passenger extends Component {
         <ActivityIndicator size='large' animating={this.state.lookingForDriver} />
       )
     }
-
+  //  console.log( this.state.pointCoords );
     if (this.state.pointCoords.length > 1){
       marker = (
         <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length - 1]}/>
@@ -113,8 +117,7 @@ export default class Passenger extends Component {
           {findingDriverActIndicator}
         </BottomButton>
       );
-    }
-  
+    }  
     return (
       <View style={styles.container}>
         <MapView
@@ -189,8 +192,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     borderWidth: 0.5,
     marginLeft: 5,
-    marginRight: 5,
-    fontFamily: 'Poppins'
+    marginRight: 5
   }
 });
 

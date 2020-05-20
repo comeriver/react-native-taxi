@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator, Image, Linking, Platform } from 'react-native';
-import { MapView, Location, TaskManager} from 'expo';
+import MapView from 'react-native-maps';
+import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import PolyLine from '@mapbox/polyline';
-import apiKey from '../googleapikey';
+import Constants from 'expo-constants'
 import socketIO from 'socket.io-client';
 import BottomButton from '../components/BottomButton';
 
@@ -41,7 +43,7 @@ export default class Driver extends Component {
   async getRouteDirections(destinationPlaceId){
     try{
       // console.log(this.state.predictions);
-      const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${apiKey}`;
+      const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Constants.manifest.googleMapsApiKey}`;
       const response = await fetch(apiUrl);
       const json = await response.json();
       console.log(json);
