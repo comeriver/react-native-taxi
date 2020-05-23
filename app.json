@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "React Native Taxi",
-    "slug": "react-native-taxi",
+    "name": "Flex Cab",
+    "slug": "flex-cab-taxi",
     "privacy": "public",
     "sdkVersion": "37.0.0",
     "platforms": [
@@ -23,14 +23,14 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.TaxiApp.TaxiApp",
+      "bundleIdentifier": "ng.com.flexcab.app",
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "AIzaSyDWwE-f0dHenQ_lMNJBy3cC5IWYh2oaQeE"
       }
     },
     "android": {
-      "package": "com.TaxiApp.TaxiApp",
+      "package": "ng.com.flexcab.app",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDWwE-f0dHenQ_lMNJBy3cC5IWYh2oaQeE"

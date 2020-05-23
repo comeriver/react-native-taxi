@@ -17,16 +17,18 @@ export default class BottomButton extends React.Component{
 
 const styles = StyleSheet.create({
   bottomButton: {
-    backgroundColor: "rgb(25, 31, 76)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     marginTop: "auto",
     margin: 20,
-    padding: 15,
-    paddingLeft: 30,
-    paddingRight: 30,
+    marginBottom: 70,
+    padding: 20,
+    paddingLeft: 50,
+    paddingRight: 50,
+    borderRadius: 10,
     alignSelf: "center"
   },
   bottomButtonText: {
-    fontSize: 25,
+    fontSize: 20,
     color: "white",
     fontWeight: "600"
   }

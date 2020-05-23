@@ -1,6 +1,6 @@
-import React, {Component} from 'react';
+import React, {Component } from 'react';
 import * as Location from 'expo-location';
-import { Platform, Alert } from 'react-native';
+import { StyleSheet, View, Platform, Alert, Text, TouchableOpacity } from 'react-native';
 import * as Permissions from 'expo-permissions';
 
 
@@ -28,18 +28,43 @@ export default function genericContainer(WrappedComponent){
                 location,
               });
             }
-            if (Platform.OS === 'ios'){
-              if(permissions.location.ios.scope !== 'always'){
+            else if (Platform.OS === 'ios' && permissions.location.ios.scope !== 'always'){     
                 Alert.alert('Please allow the app to always access your location in Settings');
-              }
+            }
+            else
+            {
+                let location = await Location.getCurrentPositionAsync({});
+                location ? this.setState({ locationResult: JSON.stringify(location), location, }) : location;
             }
          
-            let location = await Location.getCurrentPositionAsync({});
-            this.setState({ locationResult: JSON.stringify(location), location, });
         }
 
         render(){
+            if( ! this.state.location )
+            {
+                return (
+                <View>
+                    <Text style={{ color: "red", marginHorizontal: 50, marginVertical: 200, fontSize: 20 }}>Please restart the app when you have enabled Location in your device Settings.</Text>
+                    <TouchableOpacity onPress={null} style={styles.button}>
+                        <Text style={styles.buttonText}>Exit</Text>
+                    </TouchableOpacity>
+                </View>
+                );
+            }
             return <WrappedComponent location={this.state.location}/>;
         }
     }
 }
+const styles = StyleSheet.create({
+    button: {
+        backgroundColor: 'rgb(25, 31, 76)',
+        paddingVertical: 20,
+        marginHorizontal: 50,
+        marginVertical: 7
+    },
+    buttonText: {
+        color: '#fff',
+        textAlign: 'center',
+        fontSize: 15
+    },
+})

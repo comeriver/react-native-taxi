@@ -1,10 +1,10 @@
 {
-  "devToolsPort": 19003,
+  "devToolsPort": 19002,
   "expoServerPort": 19000,
-  "packagerPort": 19004,
-  "packagerPid": 34260,
+  "packagerPort": 19003,
+  "packagerPid": 83446,
   "expoServerNgrokUrl": "https://yz-9gd.anonymous.react-native-taxi.exp.direct",
   "packagerNgrokUrl": "https://packager.yz-9gd.anonymous.react-native-taxi.exp.direct",
-  "ngrokPid": 34283,
+  "ngrokPid": 83456,
   "webpackServerPort": null
 }

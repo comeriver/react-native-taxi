@@ -1,6 +1,6 @@
 import { AsyncStorage } from 'react-native';
 
-const namespace = 'PAGECARTON';
+const namespace = 'PAGECARTON-';
 global[namespace] = {};
 
 
@@ -41,27 +41,27 @@ const setStaticResource = function ({ name, value, expiry = 3600, storage = true
     global[namespace][name] = data;
 }
 
-const setup = function ({ protocol = 'https://', domain = 'pagecarton.com', port = '', path = '', version = '0.0.1', storage }) {
+const setup = function ({ scheme = 'https', domain = 'pagecarton.com', port = '', path = '', version = '0.0.1', storage }) {
     let homeUrl = '';
     if (storage) {
         setStorage(storage);
     }
-    if (protocol) {
-        homeUrl += protocol;
+    if (scheme) {
+        homeUrl += scheme.trim() + "://";
     }
     if (domain) {
-        homeUrl += domain;
+        homeUrl += domain.trim();
     }
     if (port) {
-        homeUrl += port;
+        homeUrl += ":" + port.trim();
     }
     if (path) {
-        homeUrl += path;
+        homeUrl += path.trim();
     }
     setStaticResource({
         name: "setup",
         value: {
-            protocol,
+            scheme,
             domain,
             port,
             path,
@@ -117,12 +117,10 @@ const resetStaticServerResource = function (name) {
     resetStaticResource(name)
 }
 
-const getServerResource = function ({ name, url, method, contentType, refresh, postData, expiry }) {
+const getServerResource = function ({ name, url, method, contentType, refresh, postData, expiry, responseType = "JSON" }) {
     if (!url) {
         url = urls[name];
     }
-    //  console.log(name);
-    //  console.log(url);
     let link = '';
     if (!getStaticResource("setup") || !getStaticResource("setup").homeUrl) {
         console.error("PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js")
@@ -141,15 +139,20 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 getStorage().getItem(namespace + name).then( data => {
                     if (data !== null) {
                         data = JSON.parse(data);
-                        if ({ value, expiry } = data) {
+                        let value = data.value
+                        let expiry = data.expiry
+                        if ( expiry ) {
                             if (new Date(expiry) < (new Date())) {
                                 resetStaticResource(name);
-                            }
-                            else {
-                                setStaticResource({ name, value, expiry, storage: false });
-                                value ? resolve(value) : null
+                                value = undefined;
                             }
                         }
+                        if( value )
+                        {
+                            setStaticResource({ name, value, expiry, storage: false });
+                            resolve( value );
+                        }
+
                     }
                        
                 }  )
@@ -175,13 +178,32 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             headers: {
                 Accept: contentType ? contentType : 'application/json',
                 'Content-Type': contentType ? contentType : 'application/json',
+                "AYOOLA-PLAY-MODE": responseType
             },
             body: postData ? JSON.stringify(postData) : {},
-        }).then((response) => response.json()).then((value) => {
+        }).then((response) => { 
+        //    response.text().then( text => console.log( text ) );
+            let data = {};
+            try
+            {
+                data = response.json()
+            }
+            catch( e )
+            {
+                let message = "Invalid response received from server"
+                alert( message );
+                throw new Exception( message );
+            }
+            return data;
+        } ).then((value) => {
             setStaticResource({ name, value, expiry });
-            value ? resolve(value) : value;
+            if( value )
+            { 
+               resolve(value)
+            }
         }).catch((error) => {
-            console.log(error);
+            console.log( error );
+            console.log( "We encountered error retrieving the right data from server" );
         });
 
 

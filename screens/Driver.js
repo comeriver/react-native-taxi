@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, Image, Linking, Platform } from 'react-native';
+import { Button, View, StyleSheet, Text, ActivityIndicator, Image, Linking, Platform } from 'react-native';
 import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
@@ -7,6 +7,7 @@ import PolyLine from '@mapbox/polyline';
 import Constants from 'expo-constants'
 import socketIO from 'socket.io-client';
 import BottomButton from '../components/BottomButton';
+import { Updates } from 'expo';
 
 let locationsArray = [];
 TaskManager.defineTask('locationUpdates', ({data: { locations }, error}) => {
@@ -150,7 +151,14 @@ export default class Driver extends Component {
         <BottomButton onPressFunction={bottomButtomFunction} buttonText={passengerSearchText}>
           {findPassengerActIndicator}
         </BottomButton>
-
+        <View style={{borderWidth:0,position:'absolute',top:50, left:20}}>
+           <Button
+             title="<  Exit"
+             color="#841584"
+             onPress={Updates.reload}
+             style={{ backgroundColor: 'white', padding: 30 }}
+             accessibilityLabel="Back"/>
+        </View>
       </View>
     );
   }

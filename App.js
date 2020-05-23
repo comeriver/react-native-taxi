@@ -34,13 +34,12 @@ YellowBox.ignoreWarnings([
 
 import PageCarton from './pagecarton.js'
 
-// const protocol = 'https://'
-const domain = 'www.comeriver.com'
-// const port = ':80'
-// const path = '/'
 const pc = PageCarton.setup(
     {
-        domain
+        scheme: "http",
+        domain: "localhost",
+        port: "8888",
+        path: "/taxi",
     }
 );
 //  How to retrieve posts
@@ -48,7 +47,7 @@ const pc = PageCarton.setup(
 {
     console.log( data );
 })
- */
+*/
 
 
 const AppContainer = createAppContainer(RootStack); 
@@ -94,9 +93,9 @@ export default class App extends Component {
       );
     }
     if (this.state.token === ''){
-      return <Login handleChangeToken={this.handleChangeToken}/>
+    //  return <Login pc={pc} handleChangeToken={this.handleChangeToken}/>
     }
-    return <HomeScreen token={this.state.token}/>
+    return <HomeScreen pc={pc} token={this.state.token}/>
   }
 }
 

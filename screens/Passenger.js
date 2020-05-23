@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import { View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image} from 'react-native';
+import { Button, View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image} from 'react-native';
 import MapView from 'react-native-maps';
 import PolyLine from '@mapbox/polyline';
 import Constants from 'expo-constants'
 import _ from 'lodash';
 import socketIO from 'socket.io-client';
 import BottomButton from '../components/BottomButton';
+import { Updates } from 'expo';
 
 export default class Passenger extends Component {
   constructor(props){
@@ -30,11 +31,9 @@ export default class Passenger extends Component {
 
   async onChangeDestination(destination){
     const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Constants.manifest.android.config.googleMaps.apiKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
-//    console.log( apiUrl );
     try{
       const result = await fetch(apiUrl);
       const json = await result.json();
-      // console.log(json);
       this.setState({
         predictions: json.predictions,
         buttonText: 'REQUEST TAXI 🚗'
@@ -46,12 +45,10 @@ export default class Passenger extends Component {
 
   async getRouteDirections(destinationPlaceId, destinationName){
     try{
-      // console.log(this.state.predictions);
       const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Constants.manifest.android.config.googleMaps.apiKey}`;
 
       const response = await fetch(apiUrl);
       const json = await response.json();
- //     console.log(json);
       const points = PolyLine.decode(json.routes[0].overview_polyline.points);
       const pointCoords = points.map((point) => {
         return {latitude: point[0], longitude: point[1]}
@@ -67,6 +64,9 @@ export default class Passenger extends Component {
 
   async requestDriver(){
     this.setState({lookingForDriver: true});
+
+
+    
     const socket = socketIO.connect('http://192.168.100.3:3000');
     socket.on('connect', () => {
       console.log('client connected');
@@ -162,6 +162,14 @@ export default class Passenger extends Component {
           }): null
         }
         {getDriver}
+        <View style={{borderWidth:0,position:'absolute',top:50, left:20}}>
+           <Button
+             title="<   Exit"
+             color="#000"
+             onPress={Updates.reload}
+             style={{ padding: 30, height: 60 }}
+             accessibilityLabel="Go Back"/>
+        </View>
       </View>
     );
   }
@@ -176,23 +184,23 @@ const styles = StyleSheet.create({
   },
 
   destinationInput: {
-    height: 40,
+    height: 70,
     borderWidth: 0.5,
-    marginTop: 50,
-    marginLeft: 5,
-    marginRight: 5,
-    backgroundColor: 'white',
-    padding: 5,
-    fontSize: 18
+    marginTop: 100,
+    marginLeft: 20,
+    marginRight: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 20,
+    fontSize: 20
   },
 
   suggestions: {
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    padding: 5,
+    padding: 10,
     fontSize: 18,
     borderWidth: 0.5,
-    marginLeft: 5,
-    marginRight: 5
+    marginLeft: 20,
+    marginRight: 20
   }
 });
 

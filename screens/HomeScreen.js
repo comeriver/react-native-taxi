@@ -37,13 +37,17 @@ export default class HomeScreen extends Component{
           onPress={() => this.handleChange('isDriver', true)}
         >
           <Text style={styles.choiceText}>I'm a Driver</Text>
+          <Text style={styles.choiceText}></Text>
+          <Text style={styles.choiceText}></Text>
           <Image source={require('../assets/steeringwheel.png')} style={styles.selectionImage} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.choiceContainer}
           onPress={() => this.handleChange('isPassenger', true)}
         >
-          <Text style={styles.choiceText}>I'm a Passenger</Text>
+          <Text style={styles.choiceText}>Get a ride now</Text>
+          <Text style={styles.choiceText}></Text>
+          <Text style={styles.choiceText}></Text>
           <Image source={require('../assets/passenger.png')} style={styles.selectionImage} />
         </TouchableOpacity>
       </View>

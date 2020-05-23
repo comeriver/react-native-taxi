@@ -16,22 +16,21 @@ export default class LoginForm extends Component {
             value={this.props.email}
             onChangeText={(email) => {this.props.handleChange('email', email)}}
         />
-        <Text style={styles.formLabel}>Password:</Text>
+        <Text style={styles.formLabel}>Phone:</Text>
         <TextInput 
             style={styles.input} 
-            autoCapitalize='none' 
-            autoCorrect={false} 
-            secureTextEntry 
-            placeholder='Password'
+            placeholder='08055500555'
             placeholderTextColor='#a9a9a9'
-            value={this.props.password}
-            onChangeText={(password) => {this.props.handleChange('password', password)}}
+            keyboardType='numeric'
+            autoCapitalize='none'
+            autoCorrect={false}
+            value={this.props.phone_number}
+            onChangeText={(phone_number) => {this.props.handleChange('phone_number', phone_number)}}
         />
+        <Text style={{ margin: 20 }}> </Text>
+
         <TouchableOpacity onPress={this.props.handleSignIn} style={styles.button}>
-            <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={this.props.handleSignUp} style={styles.button}>
-            <Text style={styles.buttonText}>Create Account</Text>
+            <Text style={styles.buttonText}>Request Taxi</Text>
         </TouchableOpacity>
       </View>
     )
@@ -40,13 +39,11 @@ export default class LoginForm extends Component {
 
 const styles = StyleSheet.create({
     input: {
-        height: 50,
+        height: 70,
         borderWidth: 2,
         borderColor: '#4bc1bc',
-        
-        padding: 10,
-        marginBottom: 10,
-        marginHorizontal: 5,
+        marginVertical: 10, 
+        padding: 20,
         borderRadius: 4,
         fontSize: 18
     },
@@ -59,13 +56,12 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         textAlign: 'center',
-        fontSize: 23
+        fontSize: 15
     },
     formLabel: {
-      fontSize: 23,
+      fontSize: 15,
       color: 'rgb(25, 31, 76)',
-      marginHorizontal: 5,
-      marginBottom: 5
+      marginVertical: 10, 
 
     }
 })
