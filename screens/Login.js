@@ -11,9 +11,9 @@ export default class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            email: '',
+            email: props.email ? props.email : "",
             password: '',
-            phone_number: '',
+            phone_number: props.phone_number ? props.phone_number : "",
             errorMessage: ''
         }
         this.handleChange = this.handleChange.bind(this);
@@ -50,7 +50,7 @@ export default class Login extends Component {
                     alert(data.badnews);
                     return false;
                 }
-                    console.log( data );
+                //    console.log( data );
                 if (data.auth_token) {
                     this.props.handleChangeToken(data);
                     return true;
@@ -59,13 +59,11 @@ export default class Login extends Component {
             })
 
         } catch (error) {
-            console.log(error);
+           // console.log(error);
             this.setState({ errorMessage: "There is an error logging in" });
-            //console.error(error);
         }
     }
     render() {
-        //  alert( this.props.pc.homeUrl + "/img/logo.png" ); 
         return (
             <View style={styles.container}>
                 <View  style={styles.item}>
@@ -79,6 +77,7 @@ export default class Login extends Component {
                 <LoginForm
                     email={this.state.email}
                     password={this.state.password}
+                    phone_number={this.state.phone_number}
                     handleChange={this.handleChange}
                     handleSignIn={this.handleSignIn}
                     handleSignUp={this.handleSignUp}

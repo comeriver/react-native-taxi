@@ -37,8 +37,6 @@ export default class HomeScreen extends Component{
           onPress={() => this.handleChange('isDriver', true)}
         >
           <Text style={styles.choiceText}>I'm a Driver</Text>
-          <Text style={styles.choiceText}></Text>
-          <Text style={styles.choiceText}></Text>
           <Image source={require('../assets/steeringwheel.png')} style={styles.selectionImage} />
         </TouchableOpacity>
         <TouchableOpacity 
@@ -46,8 +44,6 @@ export default class HomeScreen extends Component{
           onPress={() => this.handleChange('isPassenger', true)}
         >
           <Text style={styles.choiceText}>Get a ride now</Text>
-          <Text style={styles.choiceText}></Text>
-          <Text style={styles.choiceText}></Text>
           <Image source={require('../assets/passenger.png')} style={styles.selectionImage} />
         </TouchableOpacity>
       </View>
@@ -58,6 +54,7 @@ export default class HomeScreen extends Component{
 const styles = StyleSheet.create({
     container: {
       flex: 1,
+      paddingTop: 50,
       backgroundColor: '#e8e8e8'
     },
 
@@ -69,12 +66,13 @@ const styles = StyleSheet.create({
 
     selectionImage: {
       height: 200,
+      marginVertical: 20,
       width: 200
     },
 
     choiceText: {
       color: 'rgb(25, 31, 76)',
-      
+      marginVertical: 20,
       fontSize: 32
     }
   });

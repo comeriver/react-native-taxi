@@ -60,6 +60,7 @@ const setup = function ({ scheme = 'https', domain = 'pagecarton.com', port = ''
     }
     setStaticResource({
         name: "setup",
+        expiry: false,
         value: {
             scheme,
             domain,
@@ -183,16 +184,18 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             body: postData ? JSON.stringify(postData) : {},
         }).then((response) => { 
         //    response.text().then( text => console.log( text ) );
-            let data = {};
+            let data = {};    
             try
             {
                 data = response.json()
             }
             catch( e )
             {
-                let message = "Invalid response received from server"
-                alert( message );
-                throw new Exception( message );
+             //   response.text().then( text => console.log( text ) );
+               console.log( e )
+               
+            //    let message = "Invalid response received from server"
+            //    alert( message ); 
             }
             return data;
         } ).then((value) => {
@@ -203,13 +206,11 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             }
         }).catch((error) => {
             console.log( error );
-            console.log( "We encountered error retrieving the right data from server" );
         });
 
 
     })
 }
-
 
 export default {
     setup,

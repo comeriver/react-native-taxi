@@ -6,28 +6,38 @@ import Constants from 'expo-constants'
 import _ from 'lodash';
 import socketIO from 'socket.io-client';
 import BottomButton from '../components/BottomButton';
-import { Updates } from 'expo';
+import * as Updates from 'expo-updates'
+import PageCarton from '../pagecarton.js'
 
 export default class Passenger extends Component {
+    timer;
   constructor(props){
     super(props);
-    this.state = {
-      destination: "",
-      predictions: [],
-      isReady: false,
-      pointCoords: [], 
-      routeResponse: null,
-      lookingForDriver: false,
-      driverIsOnTheWay: false,
-      driverLocation: null,
-      buttonText: "REQUEST TAXI 🚗"
-    };
+    this.state = this.resetState( false );
     this.onChangeDestinationDebounced = _.debounce(this.onChangeDestination.bind(this), 250);
     this.getRouteDirections = this.getRouteDirections.bind(this);
     this.requestDriver = this.requestDriver.bind(this);
+    this.resetState = this.resetState.bind(this);
     this.watchId = {}
   }
 
+  resetState(reset = true) {
+    let state = {
+        destination: "",
+        predictions: [],
+        isReady: false,
+        pointCoords: [], 
+        routeResponse: null,
+        lookingForDriver: false,
+        driverIsOnTheWay: false,
+        booking_id: "",
+        status: 0,
+        driverLocation: null,
+        buttonText: "REQUEST TAXI 🚗"
+      };
+    reset ? this.setState(state) : null;
+    return state;
+}
 
   async onChangeDestination(destination){
     const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Constants.manifest.android.config.googleMaps.apiKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
@@ -65,26 +75,159 @@ export default class Passenger extends Component {
   async requestDriver(){
     this.setState({lookingForDriver: true});
 
+    try {
 
-    
-    const socket = socketIO.connect('http://192.168.100.3:3000');
-    socket.on('connect', () => {
-      console.log('client connected');
-      //Request a Taxi
-      socket.emit('taxiRequest', this.state.routeResponse);
-    });
+        PageCarton.getServerResource( { name: "login" } )
+        .then( (userInfo) => 
+            {        
+                return PageCarton.getServerResource({ 
+                name: "make-booking",
+                url: "/widgets/TaxiApp_Booking_Creator",
+                refresh: true,
+                postData:  { 
+                    destination: this.state.destination, 
+                    passenger_id: userInfo.user_id, 
+                    passenger_location: this.state.pointCoords[this.state.pointCoords.length - 1], 
+                    route_info: this.state.routeResponse, 
+                } 
+        }) }
+        ).catch( error => console.log( error ) )
+        .then((data) => {
+            if (! data) {
+                alert("We could not get a booking from the server.");
+                return false;
+            }
+            if (data.badnews) {
+                return false;
+            }
+            if (data.goodnews) {
 
-    socket.on('driverLocation', (driverLocation) => {
-      console.log('driver location updated');
-      const pointCoords = [...this.state.pointCoords, driverLocation];
-      this.map.fitToCoordinates(pointCoords, {edgePadding: {top: 30, bottom: 30, left: 30, right: 30}});
-      this.setState({
-        lookingForDriver: false, 
-        driverIsOnTheWay: true, 
-        driverLocation,
-        buttonText: 'DRIVER IS ON THE WAY'
-      });
-    });
+
+                this.setState({
+                    buttonText: 'BOOKING MADE. CONNECTING TO A RIDE',
+                    booking_id: data.booking_id
+                  });
+                  this.refreshStatus();
+                  return true;
+            }
+
+        })
+
+    } catch (error) {
+        console.log(error);
+        this.setState({ errorMessage: "There is an error logging in" });
+    }
+  }
+
+  async refreshStatus(){
+    this.timer = setTimeout( () => this.checkBookingStatus(), 10000 )
+  }
+  async checkBookingStatus(){
+
+    try {
+        PageCarton.getServerResource({ 
+                name: "check-booking-status",
+                url: "/widgets/TaxiApp_Booking_Status",
+                refresh: true,
+                postData:  { 
+                    booking_id: this.state.booking_id, 
+                    passenger_location: this.state.pointCoords[this.state.pointCoords.length - 1]
+                } 
+        }).catch( error => console.log( error ) )
+        .then((data) => {
+            if (! data) {
+                this.setState({
+                    buttonText: 'Connection error, still trying...',
+                  });
+                this.refreshStatus();
+                return false;
+            }
+            if (data.badnews) {
+            
+                alert(data.badnews);
+                return false;
+            }
+            if (data.goodnews) 
+            {
+                //    console.log( data.status );
+                if( ! data.status )
+                {
+                    this.setState({
+                        buttonText: 'Looking for driver...',
+                      });
+                    this.refreshStatus();
+                    return false;
+                }
+                else
+                {
+                    this.setState({
+                        status: data.status,
+                      });
+                }
+                if( ! data.driver_location )
+                {
+                    data.driver_location = this.state.pointCoords[this.state.pointCoords.length - 1];
+                }
+                const pointCoords = [...this.state.pointCoords, data.driver_location];
+                switch( data.status )
+                {
+                    case 1:
+                        this.setState({
+                            lookingForDriver: false, 
+                            driverIsOnTheWay: true, 
+                            driverLocation: data.driver_location,
+                            buttonText: 'DRIVER IS ON THE WAY'
+                        });        
+                        this.map.fitToCoordinates(pointCoords, {edgePadding: {top: 30, bottom: 30, left: 30, right: 30}});
+                        this.refreshStatus();
+                    break;
+                    case 2:
+                        this.setState({
+                            lookingForDriver: false, 
+                            driverIsOnTheWay: true, 
+                            driverLocation: data.driver_location,
+                            buttonText: 'Your ride has arrived'
+                        });        
+                        this.map.fitToCoordinates(pointCoords, {edgePadding: {top: 30, bottom: 30, left: 30, right: 30}});
+                        this.refreshStatus();
+                    break;
+                    case 3:
+                        this.setState({
+                            lookingForDriver: false, 
+                            driverIsOnTheWay: false, 
+                            driverLocation: data.driver_location,
+                            buttonText: 'You are enroute'
+                        });        
+                        this.map.fitToCoordinates(pointCoords, {edgePadding: {top: 30, bottom: 30, left: 30, right: 30}});
+                        this.refreshStatus();
+                    break;
+                    case 4:
+                        this.setState({
+                            lookingForDriver: false, 
+                            driverIsOnTheWay: false, 
+                            driverLocation: data.driver_location,
+                            buttonText: 'Trip Ended. View Summary!'
+                        });        
+                        this.map.fitToCoordinates(pointCoords, {edgePadding: {top: 30, bottom: 30, left: 30, right: 30}});
+                    //    this.refreshStatus();
+                    break;
+                }
+                return true;
+            }
+            else
+            {
+                this.setState({
+                    buttonText: 'Server content error, Still trying...',
+                    });
+                
+            }
+
+        })
+
+    } catch (error) {
+        console.log(error);
+        this.setState({ errorMessage: "There is an error logging in" });
+    }
   }
 
   render() {
@@ -93,8 +236,12 @@ export default class Passenger extends Component {
     let getDriver = null;
     let findingDriverActIndicator = null;
     let driverMarker = null;
+    let marker = null;
+    let cancelButton = null;
+    let active = this.state.status ? true : false;
 
     if(this.state.driverIsOnTheWay){
+        active = true;
       driverMarker = (
         <MapView.Marker coordinate={this.state.driverLocation}>
           <Image source={require('../assets/taxi-icon.png')} style={{width: 40, height: 40}} />
@@ -103,21 +250,35 @@ export default class Passenger extends Component {
     }
 
     if(this.state.lookingForDriver){
+        active = true;
       findingDriverActIndicator = (
         <ActivityIndicator size='large' animating={this.state.lookingForDriver} />
       )
     }
   //  console.log( this.state.pointCoords );
-    if (this.state.pointCoords.length > 1){
+    if (this.state.pointCoords.length > 0){
       marker = (
         <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length - 1]}/>
       );
       getDriver = (
-        <BottomButton onPressFunction={this.requestDriver} buttonText={this.state.buttonText}>
+        <BottomButton onPressFunction={! this.state.lookingForDriver && ! this.state.driverIsOnTheWay && ! this.state.status ? this.requestDriver : function(){ alert( "Already connecting to a ride" ) }} buttonText={this.state.buttonText}>
           {findingDriverActIndicator}
         </BottomButton>
       );
     }  
+    if (active) {
+        cancelButton = (
+            <View style={{ borderWidth: 1, position: 'absolute', top: 50, right: 20 }}>
+                <Button
+                    title=" x  Cancel Trip"
+                    color="#000"
+                    onPress={this.resetState}
+                    style={{ backgroundColor: 'white', padding: 30 }}
+                    accessibilityLabel="Back" />
+            </View>
+        )
+    }
+
     return (
       <View style={styles.container}>
         <MapView
@@ -138,7 +299,7 @@ export default class Passenger extends Component {
             strokeColor="red"
           />
           {
-            this.state.pointCoords.length > 1 ? (
+            this.state.pointCoords.length > 0 ? (
               <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length -1]} title={this.state.destination}/>
             ) : null
           }
@@ -162,14 +323,7 @@ export default class Passenger extends Component {
           }): null
         }
         {getDriver}
-        <View style={{borderWidth:0,position:'absolute',top:50, left:20}}>
-           <Button
-             title="<   Exit"
-             color="#000"
-             onPress={Updates.reload}
-             style={{ padding: 30, height: 60 }}
-             accessibilityLabel="Go Back"/>
-        </View>
+        {cancelButton}
       </View>
     );
   }
