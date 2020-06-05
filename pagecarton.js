@@ -90,7 +90,6 @@ const resetStaticResource = function (name) {
 
 const getStaticResource = function (name) {
     if (global[namespace][name]) {
-        //    console.log( global[namespace][name] )
         let value = global[namespace][name].value;
         let expiry = global[namespace][name].expiry;
         if (expiry) {
@@ -99,7 +98,12 @@ const getStaticResource = function (name) {
                 return false;
             }
         }
+    //    console.log( value )
         return value;
+    }
+    else
+    {
+     //  console.log( name );
     }
 
 }
@@ -129,16 +133,21 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
     }
     link = getStaticResource("setup").homeUrl + url;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject ) => {
         if (!refresh) {
             if (getStaticResource(name)) {
-                resolve(getStaticResource(name))
+                return resolve(getStaticResource(name))
+            }
+            else
+            {
+            //    console.log( name );
             }
             let data;
             if( getStorage().getItem(namespace + name).then )
             {
                 getStorage().getItem(namespace + name).then( data => {
                     if (data !== null) {
+                        //    console.log( data );
                         data = JSON.parse(data);
                         let value = data.value
                         let expiry = data.expiry
@@ -151,7 +160,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                         if( value )
                         {
                             setStaticResource({ name, value, expiry, storage: false });
-                            resolve( value );
+                            return resolve( value );
                         }
 
                     }
@@ -160,6 +169,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             }
             else if (data = getStorage().getItem(namespace + name)) {
                 if (data !== null) {
+                //    console.log( data );
                     data = JSON.parse(data);
                     if ({ value, expiry } = data) {
                         if (new Date(expiry) < (new Date())) {
@@ -167,13 +177,24 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                         }
                         else {
                             setStaticResource({ name, value, expiry, storage: false });
-                            value ? resolve(value) : null
+                            if( value)
+                            {
+                                return resolve(value) 
+                            }
                         }
                     }
                 }
             }
         }
     //    const fetch = fetch ? fetch : require("node-fetch");
+    //    console.log( link );
+        if (!url) {
+            const message = "No URL to go to"
+            console.error( message );
+          //  console.log( name );
+          //  console.log( postData );
+            return reject( message );
+        }
         fetch(link, {
             method: method ? method : 'POST',
             headers: {
@@ -183,7 +204,18 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             },
             body: postData ? JSON.stringify(postData) : {},
         }).then((response) => { 
-        //    response.text().then( text => console.log( text ) );
+
+        //    console.log( link );
+        //    console.log( postData );
+        //    console.log( response.status );
+
+            if (response.status !== 200) {
+                const message = 'Looks like there was a problem. Status Code: ' +
+                response.status;
+                console.error( message );
+                //    response.text().then( text => console.log( text ) );
+                return reject( message );
+            }
             let data = {};    
             try
             {
@@ -199,10 +231,11 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             }
             return data;
         } ).then((value) => {
+        //    console.log( value );
             setStaticResource({ name, value, expiry });
             if( value )
             { 
-               resolve(value)
+                return resolve(value)
             }
         }).catch((error) => {
             console.log( error );

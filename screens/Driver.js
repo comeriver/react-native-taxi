@@ -30,35 +30,74 @@ export default class Driver extends Component {
         this.resetState = this.resetState.bind(this);
         this.updateStatus = this.updateStatus.bind(this);
         this.refreshPassengerSearch = this.refreshPassengerSearch.bind(this);
+        this.switchStatusRefreshTimer = this.switchStatusRefreshTimer.bind(this);
         this.socket = null;
     }
 
     componentWillUnmount() {
       this.state.status ? Location.stopLocationUpdatesAsync('locationUpdates') : null;
+      this.resetState();
     }
 
 
     resetState(reset = true) {
-        let state = {
+        let newState = {
             isReady: false,
             pointCoords: [],
             lookingForPassenger: false,
             passengerFound: false,
             booking_id: "",
+            searchTryCount: 0,
             status: 0,
             driver_id: "",
             routeResponse: null
         };
-        reset ? this.setState(state) : null;
-        return state;
+        try {
+
+            PageCarton.getServerResource( { name: "login-taxiapp" } )
+            .then( (userInfo) => 
+                {        
+                    return PageCarton.getServerResource({ 
+                    name: "cancel-booking",
+                    url: "/widgets/TaxiApp_Booking_Cancel",
+                    refresh: true,
+                    postData:  { 
+                        driver_id: userInfo.user_id, 
+                    } 
+            }) }
+            ).catch( error => console.log( error ) )
+            .then((data) => {
+                if (data.goodnews) {   
+                  //  alert( data.goodnews );
+                    this.setState(newState)
+                }
+    
+            })
+    
+        } catch (error) {
+            console.log(error);
+        }
+        return newState;
     }
 
 
     async getRouteDirections(destinationPlaceId) {
         try {
+            if( ! this.map )
+            {
+                return false;
+            }
+
             // console.log(this.state.predictions);
             const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Constants.manifest.android.config.googleMaps.apiKey}`;
             const response = await fetch(apiUrl);
+            if (response.status !== 200) {
+                console.error('Looks like there was a problem. Status Code: ' +
+                    response.status);
+                //    console.log( response.url );
+                //    response.text().then( text => console.log( text ) );
+                return false;
+            }
             const json = await response.json();
             const points = PolyLine.decode(json.routes[0].overview_polyline.points);
             const pointCoords = points.map((point) => {
@@ -73,20 +112,35 @@ export default class Driver extends Component {
     }
 
     async refreshPassengerSearch(){
-        if( ! this.state.passengerFound  )
+        if( ! this.state.passengerFound && this.state.lookingForPassenger  )
         {
-            this.timer = setTimeout( () => this.lookForPassenger(), 10000 )
+            this.timer1 = setTimeout( () => this.lookForPassenger(), 10000 )
+        }
+    }
+
+    async switchStatusRefreshTimer( init = false ){
+        if (!this.state.booking_id) {
+            this.resetState();
+            return false;
+        }
+        if( init && this.statusRefreshTimer )
+        {
+            //  we are already set up
+            return false;
+        }
+        if( this.state.booking_id && this.state.status )
+        {
+            this.statusRefreshTimer = setTimeout( () => this.refreshStatus(), 10000 )
         }
     }
     
     async lookForPassenger() {
-        if (!this.state.passengerFound) {
-            this.setState({ lookingForPassenger: true });
-
+        if (!this.state.passengerFound ) {
+        
             try {
                 //   console.log(this.state.pointCoords);
 
-                PageCarton.getServerResource({ name: "login" })
+                PageCarton.getServerResource({ name: "login-taxiapp" })
                     .then((userInfo) => {
                         this.setState(
                             {
@@ -94,9 +148,10 @@ export default class Driver extends Component {
                                 status: 0
                             }
                         );
+                        //    console.log(userInfo);
     
                         return PageCarton.getServerResource({
-                            name: "book-passenger",
+                            name: "book-passenger-x",
                             url: "/widgets/TaxiApp_Booking_Driver",
                             refresh: true,
                             postData: {
@@ -106,22 +161,30 @@ export default class Driver extends Component {
                     }
                     ).catch(error => console.log(error))
                     .then((data) => {
+                        //    console.log(data);
+                        let searchTryCount = ++this.state.searchTryCount;
+                        this.setState({
+                            searchTryCount
+                        });
                         if (!data) {
 
                             alert("We could not get a booking from the server.");
-                            this.refreshPassengerSearch();
+                            this.resetState();
+                            //    this.refreshPassengerSearch();
                             return false;
                         }
                         if (data.badnews) {
                             //   console.log(data);
-                            alert(data.badnews);
-                            this.refreshPassengerSearch();
+                                alert(data.badnews);
+                            //    this.refreshPassengerSearch();
+                            this.resetState();
                             return false;
                         }
                         if (data.goodnews) {
 
                             if (!data.route_info) {
                             //    alert("No route found for passenger");
+                            //    this.resetState();
                                 this.refreshPassengerSearch();
                                 return false;
                             }
@@ -146,6 +209,58 @@ export default class Driver extends Component {
         }
     }
 
+    refreshStatus() {
+        try {
+            if (!this.state.booking_id) {
+                this.resetState();
+                return false;
+            }
+            PageCarton.getServerResource({
+                        name: "set-status-passenger",
+                        url: "/widgets/TaxiApp_Booking_Driver",
+                        refresh: true,
+                        postData: {
+                            driver_id: this.state.driver_id,
+                            booking_id: this.state.booking_id,
+                            driver_location: { latitude: this.props.location.coords.latitude, longitude: this.props.location.coords.longitude },
+                        }
+                })
+                .catch(error => console.log(error))
+                .then((data) => {
+
+                    this.switchStatusRefreshTimer();
+                    if (!data) {
+                        alert("We could not get the booking status from the server.");
+                        return false;
+                    }
+                    if (this.state.status && data.badnews) {
+                        alert(data.badnews);
+                        return false;
+                    }
+                    if (data.goodnews) {
+                        if (!data.route_info) {
+                        //    alert("No route found for passenger");
+                            return false;
+                        }
+                        let newState = {};
+                        if( data.status )
+                        { 
+                            newState.status = data.status;
+                            this.setState( newState );
+                        }
+                        return true;
+                    }
+
+                })
+
+        } catch (error) {
+            console.log(error);
+            this.setState({ errorMessage: "There is an error logging in" });
+        }
+
+
+    }
+
     updateStatus( status = undefined ) {
         try {
             if (!this.state.booking_id) {
@@ -155,7 +270,7 @@ export default class Driver extends Component {
                 return false;
             }
 
-            PageCarton.getServerResource({ name: "login" })
+            PageCarton.getServerResource({ name: "login-taxiapp" })
                 .then((userInfo) => {
 
                     let newState = {};
@@ -182,7 +297,7 @@ export default class Driver extends Component {
                         alert("We could not get the booking status from the server.");
                         return false;
                     }
-                    if (data.badnews) {
+                    if (this.state.status && data.badnews) {
                         alert(data.badnews);
                         return false;
                     }
@@ -223,7 +338,7 @@ export default class Driver extends Component {
                 return false;
             }
 
-            PageCarton.getServerResource({ name: "login" })
+            PageCarton.getServerResource({ name: "login-taxiapp" })
                 .then((userInfo) => {
                     this.setState(
                         {
@@ -307,12 +422,15 @@ export default class Driver extends Component {
         let active = false;
         let findPassengerActIndicator = null;
         let passengerSearchText = "FIND PASSENGER 👥";
-        let bottomButtomFunction = this.lookForPassenger;
+        let bottomButtomFunction = () => { 
+            this.setState({ lookingForPassenger: true });
+            this.lookForPassenger();
+        }
 
 
         if (this.state.lookingForPassenger) {
             active = true;
-            passengerSearchText = 'FINDING PASSENGER...';
+            passengerSearchText = 'FINDING PASSENGER... (' + this.state.searchTryCount + ')';
             findPassengerActIndicator = (
                 <ActivityIndicator size='large' animating={this.state.lookingForPassenger} />
             );
@@ -328,8 +446,30 @@ export default class Driver extends Component {
         let updateStatus = this.updateStatus;
         let resetState = this.resetState;
 
+        if( this.state.status && this.state.booking_id )
+        {
+            this.switchStatusRefreshTimer();
+        }
+
+
         switch (this.state.status) 
         {
+            case -2:
+                active = true;
+                passengerSearchText = 'Trip canceled by passenger. View Summary!';
+                bottomButtomFunction = function()
+                {
+                    ;
+                };
+            break;
+            case -1:
+                active = true;
+                passengerSearchText = 'Trip canceled by you. View Summary!';
+                bottomButtomFunction = function()
+                {
+                    ;
+                };
+            break;
             case 1:
                 active = true;
                 passengerSearchText = 'At passenger location!';

@@ -11,9 +11,9 @@ export default class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            email: props.email ? props.email : "",
+            email: props.email ? props.email : "example@gmail.com",
             password: '',
-            phone_number: props.phone_number ? props.phone_number : "",
+            phone_number: props.phone_number ? props.phone_number : "08055500555",
             errorMessage: ''
         }
         this.handleChange = this.handleChange.bind(this);
@@ -37,9 +37,10 @@ export default class Login extends Component {
             const { email, phone_number } = this.state;
 
             PageCarton.getServerResource({ 
-                name: "login",
+                name: "login-taxiapp",
                 url: "/widgets/TaxiApp_Login",
                 refresh: true,
+                expiry: false,
                 postData: { email, phone_number } 
             }).then((data) => {
                 if (! data) {
