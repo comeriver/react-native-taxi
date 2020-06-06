@@ -6,6 +6,7 @@ import Constants from 'expo-constants'
 import _ from 'lodash';
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
+import Config from '../config';
 
 export default class Passenger extends Component {
     timer;
@@ -48,7 +49,7 @@ export default class Passenger extends Component {
                             url: "/widgets/TaxiApp_Booking_Cancel",
                             refresh: true,
                             postData: {
-                                passenger_id: userInfo.user_id,
+                                passenger_id: userInfo.auth_info.user_id,
                             }
                         })
                     }
@@ -71,7 +72,7 @@ export default class Passenger extends Component {
     }
 
     async onChangeDestination(destination) {
-        const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Constants.manifest.android.config.googleMaps.apiKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
+        const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Config.googleMapsKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
         try {
             const response = await fetch(apiUrl);
             if (response.status !== 200) {
@@ -97,7 +98,7 @@ export default class Passenger extends Component {
             {
                 return false;
             }
-            const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Constants.manifest.android.config.googleMaps.apiKey}`;
+            const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Config.googleMapsKey}`;
 
             const response = await fetch(apiUrl);
             if (response.status !== 200) {
@@ -133,7 +134,7 @@ export default class Passenger extends Component {
                         refresh: true,
                         postData: {
                             destination: this.state.destination,
-                            passenger_id: userInfo.user_id,
+                            passenger_id: userInfo.auth_info.user_id,
                             passenger_location: this.state.pointCoords[this.state.pointCoords.length - 1],
                             route_info: this.state.routeResponse,
                         }

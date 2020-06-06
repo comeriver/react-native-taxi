@@ -62,7 +62,7 @@ export default class Driver extends Component {
                     url: "/widgets/TaxiApp_Booking_Cancel",
                     refresh: true,
                     postData:  { 
-                        driver_id: userInfo.user_id, 
+                        driver_id: userInfo.auth_info.user_id, 
                     } 
             }) }
             ).catch( error => console.log( error ) )
@@ -89,7 +89,7 @@ export default class Driver extends Component {
             }
 
             // console.log(this.state.predictions);
-            const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Constants.manifest.android.config.googleMaps.apiKey}`;
+            const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Config.googleMapsKey}`;
             const response = await fetch(apiUrl);
             if (response.status !== 200) {
                 console.error('Looks like there was a problem. Status Code: ' +
@@ -144,7 +144,7 @@ export default class Driver extends Component {
                     .then((userInfo) => {
                         this.setState(
                             {
-                                driver_id: userInfo.user_id,
+                                driver_id: userInfo.auth_info.user_id,
                                 status: 0
                             }
                         );
@@ -276,7 +276,7 @@ export default class Driver extends Component {
                     let newState = {};
                     if( ! this.state.driver_id )
                     {
-                        newState.driver_id = userInfo.user_id;
+                        newState.driver_id = userInfo.auth_info.user_id;
                         this.setState( newState );
                     }
                     return PageCarton.getServerResource({
@@ -347,7 +347,7 @@ export default class Driver extends Component {
                 .then((userInfo) => {
                     this.setState(
                         {
-                            driver_id: userInfo.user_id,
+                            driver_id: userInfo.auth_info.user_id,
                             status: 1
                         }
                     );

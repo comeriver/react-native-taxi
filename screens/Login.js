@@ -52,7 +52,7 @@ export default class Login extends Component {
                     return false;
                 }
                 //    console.log( data );
-                if (data.auth_token) {
+                if (data.auth_info) {
                     this.props.handleChangeToken(data);
                     return true;
                 }
