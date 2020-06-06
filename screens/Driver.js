@@ -4,7 +4,6 @@ import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import PolyLine from '@mapbox/polyline';
-import Constants from 'expo-constants'
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
 
@@ -67,7 +66,7 @@ export default class Driver extends Component {
             }) }
             ).catch( error => console.log( error ) )
             .then((data) => {
-                if (data.goodnews) {   
+                if (data && data.goodnews) {   
                   //  alert( data.goodnews );
                     this.setState(newState)
                 }

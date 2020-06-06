@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Linking, Button, View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image } from 'react-native';
 import MapView from 'react-native-maps';
 import PolyLine from '@mapbox/polyline';
-import Constants from 'expo-constants'
 import _ from 'lodash';
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
@@ -23,7 +22,7 @@ export default class Passenger extends Component {
     componentWillUnmount() {
         this.resetState();
     }
-  
+
     resetState(reset = true) {
         let newState = {
             destination: "",
@@ -53,18 +52,16 @@ export default class Passenger extends Component {
                             }
                         })
                     }
-                    ).catch(error => console.log(error))
+                    )
                     .then((data) => {
-                        if (data.goodnews) {
-                            //    alert( data.goodnews );
-                            this.setState(newState)
-                        }
 
                     })
-
+                    .catch((error) => {
+                        console.error("Could not confirm a booking cancelation on server" + error);
+                    });
+                this.setState(newState)
             } catch (error) {
-                console.log(error);
-                this.setState({ errorMessage: "There is an error logging in" });
+                console.error(error);
             }
 
         }
@@ -74,15 +71,17 @@ export default class Passenger extends Component {
     async onChangeDestination(destination) {
         const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Config.googleMapsKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
         try {
+            //   console.log( apiUrl );
             const response = await fetch(apiUrl);
             if (response.status !== 200) {
                 console.error('Looks like there was a problem. Status Code: ' +
                     response.status);
-                 //   console.log( response.url );
-                    response.text().then( text => console.log( text ) );
+                //   console.log( response.url );
+                response.text().then(text => console.log(text));
                 return false;
             }
             const json = await response.json();
+            //    console.log( json );
             this.setState({
                 predictions: json.predictions,
                 buttonText: 'REQUEST TAXI 🚗'
@@ -94,8 +93,7 @@ export default class Passenger extends Component {
 
     async getRouteDirections(destinationPlaceId, destinationName) {
         try {
-            if( ! this.map )
-            {
+            if (!this.map) {
                 return false;
             }
             const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Config.googleMapsKey}`;
@@ -104,7 +102,7 @@ export default class Passenger extends Component {
             if (response.status !== 200) {
                 console.error('Looks like there was a problem. Status Code: ' +
                     response.status);
-                    response.text().then( text => console.log( text ) );
+                response.text().then(text => console.log(text));
                 return false;
             }
             const json = await response.json();
@@ -169,8 +167,7 @@ export default class Passenger extends Component {
     }
 
     async refreshStatus() {
-        if( this.state.booking_id )
-        {
+        if (this.state.booking_id) {
             this.timer = setTimeout(() => this.checkBookingStatus(), 10000)
         }
     }
@@ -179,12 +176,9 @@ export default class Passenger extends Component {
         try {
             PageCarton.getServerResource({
                 name: "check-booking-status",
-                url: "/widgets/TaxiApp_Booking_Status",
+                url: "/widgets/TaxiApp_Booking_Status?booking_id=" + this.state.booking_id,
                 refresh: true,
-                postData: {
-                    booking_id: this.state.booking_id,
-                    passenger_location: this.state.pointCoords[this.state.pointCoords.length - 1]
-                }
+                method: 'GET'
             }).catch(error => console.log(error))
                 .then((data) => {
                     if (!data) {
@@ -222,14 +216,14 @@ export default class Passenger extends Component {
                                     driverIsOnTheWay: false,
                                     buttonText: 'You canceled the trip'
                                 });
-                            break;
+                                break;
                             case -1:
                                 this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
                                     buttonText: 'Driver canceled the trip'
                                 });
-                            break;
+                                break;
                             case 1:
                                 this.setState({
                                     lookingForDriver: false,
@@ -238,7 +232,7 @@ export default class Passenger extends Component {
                                     buttonText: 'DRIVER IS ON THE WAY'
                                 });
                                 this.refreshStatus();
-                            break;
+                                break;
                             case 2:
                                 this.setState({
                                     lookingForDriver: false,
@@ -263,25 +257,22 @@ export default class Passenger extends Component {
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
                                     buttonText: 'Trip Ended. View Summary!',
-                                    buttonAction: () =>
-                                    {
-                                        Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );
+                                    buttonAction: () => {
+                                        Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
                                     }
                                 });
                                 //    this.refreshStatus();
                                 break;
                         }
-                        if( this.map )
-                        {
+                        if (this.map) {
                             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 30, bottom: 30, left: 30, right: 30 } });
-                        }                    
+                        }
                         return true;
 
                     }
                     else {
-                        this.setState({
-                            buttonText: 'Server content error, Still trying...',
-                        });
+                        alert( "Server content error occured. Please try again later" );
+                        this.resetState();
 
                     }
 

@@ -218,7 +218,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 'Content-Type': contentType ? contentType : 'application/json',
                 "AYOOLA-PLAY-MODE": responseType
             },
-            body: postData ? JSON.stringify(postData) : {},
+            body: postData ? JSON.stringify(postData) : '',
         }).then((response) => { 
 
         //    console.log( link );
