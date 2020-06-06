@@ -1,4 +1,5 @@
 import { AsyncStorage } from 'react-native';
+import Config from './config';
 
 const namespace = 'PAGECARTON-';
 global[namespace] = {};
@@ -128,11 +129,26 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
     }
     let link = '';
     if (!getStaticResource("setup") || !getStaticResource("setup").homeUrl) {
-        console.error("PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js")
-        return false;
+        if( ! Config.domain )
+        {
+            console.error("PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js")
+            return false;
+        }
+        const pc = PageCarton.setup(
+            {
+                scheme: "http",
+                domain: "localhost",
+                port: "8888",
+                path: "/taxi",
+            }
+        );
+        link = pc.homeUrl + url;
     }
-    link = getStaticResource("setup").homeUrl + url;
-
+    else
+    {
+        link = getStaticResource("setup").homeUrl + url;
+    }
+    console.log( link );
     return new Promise((resolve, reject ) => {
         if (!refresh) {
             if (getStaticResource(name)) {
@@ -231,7 +247,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             }
             return data;
         } ).then((value) => {
-        //    console.log( value );
+            console.log( value );
             setStaticResource({ name, value, expiry });
             if( value )
             { 
