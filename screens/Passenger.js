@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button, View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image } from 'react-native';
+import { Linking, Button, View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image } from 'react-native';
 import MapView from 'react-native-maps';
 import PolyLine from '@mapbox/polyline';
 import Constants from 'expo-constants'
@@ -30,6 +30,7 @@ export default class Passenger extends Component {
             isReady: false,
             pointCoords: [],
             routeResponse: null,
+            buttonAction: null,
             lookingForDriver: false,
             driverIsOnTheWay: false,
             booking_id: "",
@@ -260,7 +261,11 @@ export default class Passenger extends Component {
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'Trip Ended. View Summary!'
+                                    buttonText: 'Trip Ended. View Summary!',
+                                    buttonAction: () =>
+                                    {
+                                        Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );
+                                    }
                                 });
                                 //    this.refreshStatus();
                                 break;
@@ -318,7 +323,7 @@ export default class Passenger extends Component {
                 <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length - 1]} />
             );
             getDriver = (
-                <BottomButton onPressFunction={!this.state.lookingForDriver && !this.state.driverIsOnTheWay && !this.state.status ? this.requestDriver : function () { alert("Already connecting to a ride") }} buttonText={this.state.buttonText}>
+                <BottomButton onPressFunction={!this.state.lookingForDriver && !this.state.driverIsOnTheWay && !this.state.status ? this.requestDriver : () => { this.state.buttonAction ? this.state.buttonAction() : alert("Already connecting to a ride") }} buttonText={this.state.buttonText}>
                     {findingDriverActIndicator}
                 </BottomButton>
             );

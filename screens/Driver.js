@@ -311,6 +311,11 @@ export default class Driver extends Component {
                         let newState = {};
                         if( status )
                         { 
+                        //    if( this.state.status && this.state.booking_id )
+                            {
+                                this.switchStatusRefreshTimer();
+                            }
+                    
                             newState.status = status;
                             this.setState( newState );
                         }
@@ -446,12 +451,6 @@ export default class Driver extends Component {
         let updateStatus = this.updateStatus;
         let resetState = this.resetState;
 
-        if( this.state.status && this.state.booking_id )
-        {
-            this.switchStatusRefreshTimer();
-        }
-
-
         switch (this.state.status) 
         {
             case -2:
@@ -498,9 +497,9 @@ export default class Driver extends Component {
             case 4:
                 active = true;
                 passengerSearchText = 'Trip Ended. View Summary!';
-                bottomButtomFunction = function()
+                bottomButtomFunction = () =>
                 {
-                    alert( "Trip already ended!" );
+                    Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );
                 };
             break;
         }
