@@ -26,14 +26,14 @@
       "bundleIdentifier": "ng.com.flexcab.app",
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "AIzaSyDWwE-f0dHenQ_lMNJBy3cC5IWYh2oaQeE"
+        "googleMapsApiKey": ""
       }
     },
     "android": {
       "package": "ng.com.flexcab.app",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDWwE-f0dHenQ_lMNJBy3cC5IWYh2oaQeE"
+          "apiKey": ""
         }
       }
     }
