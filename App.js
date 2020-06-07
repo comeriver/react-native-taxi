@@ -82,13 +82,13 @@ export default class App extends Component {
 
     handleChangeToken(token) {
         let newState = { token }
-        if( token.email )
+        if( token.auth_info?.email )
         {
-            newState.email = token.email;
+            newState.email = token.auth_info?.email;
         }
-        if( token.phone_number )
+        if( token.auth_info?.phone_number )
         {
-            newState.phone_number = token.phone_number;
+            newState.phone_number = token.auth_info?.phone_number;
         }
         this.setState( newState );
     }
