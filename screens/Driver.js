@@ -6,13 +6,14 @@ import * as TaskManager from 'expo-task-manager';
 import PolyLine from '@mapbox/polyline';
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
+import Config from '../config';
 
 let locationsArray = [];
 if (!TaskManager.isTaskDefined('locationUpdates'))
 {
     TaskManager.defineTask('locationUpdates', ({ data: { locations }, error }) => {
         if (error) {
-            console.log(error);
+            console.warn(error);
             return;
         }
         locationsArray = locations;
@@ -36,6 +37,7 @@ export default class Driver extends Component {
     componentWillUnmount() {
       this.state.status ? Location.stopLocationUpdatesAsync('locationUpdates') : null;
       this.resetState();
+      this.refreshBackgroundLocation ? clearInterval( this.refreshBackgroundLocation ) : null;
     }
 
 
@@ -74,7 +76,7 @@ export default class Driver extends Component {
             })
     
         } catch (error) {
-            console.log(error);
+            console.warn(error);
         }
         return newState;
     }
@@ -106,7 +108,7 @@ export default class Driver extends Component {
             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 20, bottom: 20, left: 20, right: 20 } })
 
         } catch (error) {
-            console.log(error)
+            console.warn(error)
         }
     }
 
@@ -154,7 +156,8 @@ export default class Driver extends Component {
                             url: "/widgets/TaxiApp_Booking_Driver",
                             refresh: true,
                             postData: {
-                                driver_id: this.state.driver_id
+                                driver_id: this.state.driver_id,
+                                driver_location: { latitude: this.props.location.coords.latitude, longitude: this.props.location.coords.longitude },
                             }
                         })
                     }
@@ -201,7 +204,7 @@ export default class Driver extends Component {
                     })
 
             } catch (error) {
-                console.log(error);
+                console.warn(error);
                 this.setState({ errorMessage: "There is an error logging in" });
             }
 
@@ -214,6 +217,7 @@ export default class Driver extends Component {
                 this.resetState();
                 return false;
             }
+            //    console.log( this.state.booking_id );
             PageCarton.getServerResource({
                         name: "set-status-passenger",
                         url: "/widgets/TaxiApp_Booking_Driver",
@@ -227,11 +231,12 @@ export default class Driver extends Component {
                 .catch(error => console.log(error))
                 .then((data) => {
 
-                    this.switchStatusRefreshTimer();
                     if (!data) {
                         alert("We could not get the booking status from the server.");
                         return false;
                     }
+                //    console.log( this.state.booking_id );
+                //    console.log( data.status );
                     if (this.state.status && data.badnews) {
                         alert(data.badnews);
                         return false;
@@ -242,18 +247,23 @@ export default class Driver extends Component {
                             return false;
                         }
                         let newState = {};
-                        if( data.status )
+                        if( data.status && data.status != this.state.status )
                         { 
                             newState.status = data.status;
                             this.setState( newState );
                         }
+                        if( data.status < 1 || data.status > 4 )
+                        {
+                            return false;
+                        }
+                        this.switchStatusRefreshTimer();
                         return true;
                     }
 
                 })
 
         } catch (error) {
-            console.log(error);
+            console.warn(error);
             this.setState({ errorMessage: "There is an error logging in" });
         }
 
@@ -296,12 +306,13 @@ export default class Driver extends Component {
                         alert("We could not get the booking status from the server.");
                         return false;
                     }
+                //    console.log( status );
+                //    console.log( this.state.status );
+                //    console.log( this.state.booking_id );
                     if (this.state.status && data.badnews) {
                         alert(data.badnews);
                         return false;
                     }
-                //    alert( data.driver_id );
-                //    alert( data.goodnews );
                     if (data.goodnews) {
                         if (!data.route_info) {
                         //    alert("No route found for passenger");
@@ -310,11 +321,6 @@ export default class Driver extends Component {
                         let newState = {};
                         if( status )
                         { 
-                        //    if( this.state.status && this.state.booking_id )
-                            {
-                                this.switchStatusRefreshTimer();
-                            }
-                    
                             newState.status = status;
                             this.setState( newState );
                         }
@@ -324,7 +330,7 @@ export default class Driver extends Component {
                 })
 
         } catch (error) {
-            console.log(error);
+            console.warn(error);
             this.setState({ errorMessage: "There is an error logging in" });
         }
 
@@ -377,11 +383,12 @@ export default class Driver extends Component {
                         //    alert("No route found for passenger"); 
                             return false;
                         }
+                        this.switchStatusRefreshTimer();
                         if (!TaskManager.isTaskDefined('locationUpdates'))
                         {
                             Location.startLocationUpdatesAsync('locationUpdates', { accuracy: 3, timeInterval: 5000 });
                         }
-                        setInterval(() => {
+                        this.refreshBackgroundLocation = setInterval(() => {
                             if( locationsArray.length )
                             {
                                 let latestLatitude = locationsArray[locationsArray.length - 1].coords.latitude;
@@ -393,7 +400,7 @@ export default class Driver extends Component {
                                     postData: {
                                         driver_id: this.state.driver_id,
                                         booking_id: this.state.booking_id,
-                                        status: 1,
+                                        status: this.state.status,
                                         driver_location: { latitude: latestLatitude, longitude: latestLongitude }
                                     }
                                 })                                
@@ -414,7 +421,7 @@ export default class Driver extends Component {
                 })
 
         } catch (error) {
-            console.log(error);
+            console.warn(error);
             this.setState({ errorMessage: "There is an error logging in" });
         }
     }
@@ -496,6 +503,14 @@ export default class Driver extends Component {
             case 4:
                 active = true;
                 passengerSearchText = 'Trip Ended. View Summary!';
+                bottomButtomFunction = () =>
+                {
+                    Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );
+                };
+            break;
+            case 5:
+                active = true;
+                passengerSearchText = 'Payment Received. View Summary!';
                 bottomButtomFunction = () =>
                 {
                     Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );

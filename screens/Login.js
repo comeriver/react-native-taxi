@@ -60,7 +60,7 @@ export default class Login extends Component {
             })
 
         } catch (error) {
-           // console.log(error);
+           // console.warn(error);
             this.setState({ errorMessage: "There is an error logging in" });
         }
     }

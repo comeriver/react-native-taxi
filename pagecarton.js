@@ -148,7 +148,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
     {
         link = getStaticResource("setup").homeUrl + url;
     }
-    console.log( link );
+//    console.log( link );
     return new Promise((resolve, reject ) => {
         if (!refresh) {
             if (getStaticResource(name)) {
@@ -205,12 +205,13 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
     //    const fetch = fetch ? fetch : require("node-fetch");
     //    console.log( link );
         if (!url) {
-            const message = "No URL to go to"
-            console.error( message );
+            const message = "No URL supplied for request " + name
+            console.warn( message );
           //  console.log( name );
           //  console.log( postData );
             return reject( message );
         }
+    //    console.log( link );
         fetch(link, {
             method: method ? method : 'POST',
             headers: {
@@ -240,21 +241,21 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             catch( e )
             {
              //   response.text().then( text => console.log( text ) );
-               console.log( e )
+               console.warn( e )
                
             //    let message = "Invalid response received from server"
             //    alert( message ); 
             }
             return data;
         } ).then((value) => {
-            console.log( value );
+         //   console.log( value );
             setStaticResource({ name, value, expiry });
             if( value )
             { 
                 return resolve(value)
             }
         }).catch((error) => {
-            console.log( error );
+            console.warn( error );
         });
 
 

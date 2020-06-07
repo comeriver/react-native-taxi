@@ -43,6 +43,7 @@ export default class Passenger extends Component {
 
                 PageCarton.getServerResource({ name: "login-taxiapp" })
                     .then((userInfo) => {
+                     //   console.log( userInfo );
                         return PageCarton.getServerResource({
                             name: "cancel-booking",
                             url: "/widgets/TaxiApp_Booking_Cancel",
@@ -54,7 +55,7 @@ export default class Passenger extends Component {
                     }
                     )
                     .then((data) => {
-
+                    //    console.log( data );
                     })
                     .catch((error) => {
                         console.error("Could not confirm a booking cancelation on server" + error);
@@ -115,7 +116,7 @@ export default class Passenger extends Component {
             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 20, bottom: 20, left: 20, right: 20 } })
 
         } catch (error) {
-            console.log(error)
+            console.warn(error)
         }
     }
 
@@ -161,7 +162,7 @@ export default class Passenger extends Component {
                 })
 
         } catch (error) {
-            console.log(error);
+            console.warn(error);
             this.setState({ errorMessage: "There is an error logging in" });
         }
     }
@@ -256,14 +257,26 @@ export default class Passenger extends Component {
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'Trip Ended. View Summary!',
+                                    buttonText: 'Trip Ended. Make Payment!',
                                     buttonAction: () => {
                                         Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
                                     }
                                 });
-                                //    this.refreshStatus();
+                                    this.refreshStatus();
                                 break;
-                        }
+                                case 5:
+                                    this.setState({
+                                        lookingForDriver: false,
+                                        driverIsOnTheWay: false,
+                                        driverLocation: data.driver_location,
+                                        buttonText: 'Payment Made. View Summary!',
+                                        buttonAction: () => {
+                                            Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
+                                        }
+                                    });
+                                    //    this.refreshStatus();
+                                break;
+                            }
                         if (this.map) {
                             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 30, bottom: 30, left: 30, right: 30 } });
                         }
@@ -271,7 +284,7 @@ export default class Passenger extends Component {
 
                     }
                     else {
-                        alert( "Server content error occured. Please try again later" );
+                    //    alert( "Server content error occured. Please try again later" );
                         this.resetState();
 
                     }
@@ -279,7 +292,7 @@ export default class Passenger extends Component {
                 })
 
         } catch (error) {
-            console.log(error);
+            console.warn(error);
             this.setState({ errorMessage: "There is an error logging in" });
         }
     }
