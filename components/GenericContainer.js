@@ -10,7 +10,7 @@ export default function genericContainer(WrappedComponent){
             super(props);
             this.state = {
                 locationResult: null,
-                location: {coords: { latitude: -1.28333, longitude: 36.8219}}
+                location: {coords: { latitude: 7.7827, longitude: 4.5418}}
             }
             this._getLocationAsync = this._getLocationAsync.bind(this);
         }
