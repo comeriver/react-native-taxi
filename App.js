@@ -36,10 +36,10 @@ import PageCarton from './pagecarton.js'
 
 const pc = PageCarton.setup(
     {
-        scheme: "http",
-        domain: "localhost",
-        port: "8888",
-        path: "/taxi",
+        scheme: "https",
+        domain: "flexcab.com.ng",
+        port: "",
+        path: "",
     }
 );
 //  How to retrieve posts 

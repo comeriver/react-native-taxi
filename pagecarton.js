@@ -202,16 +202,11 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 }
             }
         }
-    //    const fetch = fetch ? fetch : require("node-fetch");
-    //    console.log( link );
         if (!url) {
             const message = "No URL supplied for request " + name
             console.warn( message );
-          //  console.log( name );
-          //  console.log( postData );
             return reject( message );
         }
-    //    console.log( link );
         fetch(link, {
             method: method ? method : 'POST',
             headers: {
@@ -225,10 +220,10 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
         //    console.log( link );
         //    console.log( postData );
         //    console.log( response.status );
+        //    response.text().then( text => console.log( text ) );
 
             if (response.status !== 200) {
-                const message = 'Looks like there was a problem. Status Code: ' +
-                response.status;
+                const message = 'Looks like there was a problem. Status Code: ' + response.status;
                 console.error( message );
                 //    response.text().then( text => console.log( text ) );
                 return reject( message );

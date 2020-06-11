@@ -146,6 +146,7 @@ export default class Passenger extends Component {
                         return false;
                     }
                     if (data.badnews) {
+                        alert( data.badnews );
                         return false;
                     }
                     if (data.goodnews) {
@@ -182,6 +183,8 @@ export default class Passenger extends Component {
                 method: 'GET'
             }).catch(error => console.log(error))
                 .then((data) => {
+                //    console.log( data );
+                //    console.log( this.state );
                     if (!data) {
                         this.setState({
                             buttonText: 'Connection error, still trying...',
