@@ -1,7 +1,7 @@
 import { AsyncStorage } from 'react-native';
 import Config from './config';
 
-const namespace = 'PAGECARTON-';
+const namespace = 'PAGECARTON-x-';
 global[namespace] = {};
 
 
@@ -150,8 +150,11 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
     }
 //    console.log( link );
     return new Promise((resolve, reject ) => {
-        if (!refresh) {
+    //    console.log( name ); 
+
+        
             if (getStaticResource(name)) {
+                if (!refresh)
                 return resolve(getStaticResource(name))
             }
             else
@@ -159,9 +162,8 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
             //    console.log( name );
             }
             let data;
-            if( getStorage().getItem(namespace + name).then )
-            {
-                getStorage().getItem(namespace + name).then( data => {
+            getStorage().getItem(namespace + name).then( data => {
+                //    console.log( data );
                     if (data !== null) {
                         //    console.log( data );
                         data = JSON.parse(data);
@@ -176,82 +178,61 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                         if( value )
                         {
                             setStaticResource({ name, value, expiry, storage: false });
+                            if (!refresh)
                             return resolve( value );
                         }
-
+                    //    console.log( value );
                     }
+                    throw new Error( "record not found, need to request from server" );
                        
-                }  )
-            }
-            else if (data = getStorage().getItem(namespace + name)) {
-                if (data !== null) {
-                //    console.log( data );
-                    data = JSON.parse(data);
-                    if ({ value, expiry } = data) {
-                        if (new Date(expiry) < (new Date())) {
-                            resetStaticResource(name);
-                        }
-                        else {
-                            setStaticResource({ name, value, expiry, storage: false });
-                            if( value)
-                            {
-                                return resolve(value) 
-                            }
-                        }
+                }  ).catch( error => {
+
+                    if (!url) {
+                        const message = "No URL supplied for request " + name
+                        //    console.log( "rejected" ); 
+                        return reject( message );
                     }
-                }
-            }
-        }
-        if (!url) {
-            const message = "No URL supplied for request " + name
-            console.warn( message );
-            return reject( message );
-        }
-        fetch(link, {
-            method: method ? method : 'POST',
-            headers: {
-                Accept: contentType ? contentType : 'application/json',
-                'Content-Type': contentType ? contentType : 'application/json',
-                "AYOOLA-PLAY-MODE": responseType
-            },
-            body: postData ? JSON.stringify(postData) : '',
-        }).then((response) => { 
+                    fetch(link, {
+                        method: method ? method : 'POST',
+                        headers: {
+                            Accept: contentType ? contentType : 'application/json',
+                            'Content-Type': contentType ? contentType : 'application/json',
+                            "AYOOLA-PLAY-MODE": responseType
+                        },
+                        body: postData ? JSON.stringify(postData) : '',
+                    }).then((response) => { 
+                        if (response.status !== 200) {
+                            const message = 'Looks like there was a problem. Status Code: ' + response.status;
+                        //    console.error( message );
+                            //    response.text().then( text => console.log( text ) );
+                            return reject( message );
+                        }
+                        let data = {};    
+                        try
+                        {
+                            data = response.json()
+                        }
+                        catch( e )
+                        {
+                         //   response.text().then( text => console.log( text ) );
+                           console.warn( e )
+                           
+                        //    let message = "Invalid response received from server"
+                        //    alert( message ); 
+                        }
+                        return data;
+                    } ).then((value) => {
+                     //   console.log( value );
+                        setStaticResource({ name, value, expiry });
+                        if( value )
+                        { 
+                            return resolve(value)
+                        }
+                    }).catch((error) => {
+                        console.warn( error );
+                    });
+                } )
 
-        //    console.log( link );
-        //    console.log( postData );
-        //    console.log( response.status );
-        //    response.text().then( text => console.log( text ) );
-
-            if (response.status !== 200) {
-                const message = 'Looks like there was a problem. Status Code: ' + response.status;
-                console.error( message );
-                //    response.text().then( text => console.log( text ) );
-                return reject( message );
-            }
-            let data = {};    
-            try
-            {
-                data = response.json()
-            }
-            catch( e )
-            {
-             //   response.text().then( text => console.log( text ) );
-               console.warn( e )
-               
-            //    let message = "Invalid response received from server"
-            //    alert( message ); 
-            }
-            return data;
-        } ).then((value) => {
-         //   console.log( value );
-            setStaticResource({ name, value, expiry });
-            if( value )
-            { 
-                return resolve(value)
-            }
-        }).catch((error) => {
-            console.warn( error );
-        });
 
 
     })

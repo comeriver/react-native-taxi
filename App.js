@@ -53,6 +53,7 @@ const pc = PageCarton.setup(
 const AppContainer = createAppContainer(RootStack);
 
 export default class App extends Component {
+    _isMounted = false;
     constructor(props) {
         super(props);
         this.state = {
@@ -64,6 +65,29 @@ export default class App extends Component {
         this.handleChangeToken = this.handleChangeToken.bind(this);
     }
 
+    componentWillUnmount() {
+        this._isMounted = false;
+    }
+ 
+    componentDidMount()
+    {
+        this._isMounted = true;
+        PageCarton.getServerResource({ 
+            name: "login-taxiapp",
+            expiry: false,
+        }).then((data) => {
+            if (! data) {
+                return false;
+            }
+            if (data.badnews) {
+                alert(data.badnews);
+                return false;
+            }
+            this.handleChangeToken(data);
+        })
+
+    }
+ 
     async cacheResourcesAsync() {
         await Font.loadAsync({ Poppins: require('./assets/Poppins-Regular.ttf') });
         const images = [
@@ -90,7 +114,7 @@ export default class App extends Component {
         {
             newState.phone_number = token.auth_info?.phone_number;
         }
-        this.setState( newState );
+        this._isMounted ? this.setState( newState ) : null;
     }
 
     render() {
@@ -98,7 +122,7 @@ export default class App extends Component {
             return (
                 <AppLoading
                     startAsync={this.cacheResourcesAsync}
-                    onFinish={() => this.setState({ isReady: true })}
+                    onFinish={() => {  this._isMounted ? this.setState({ isReady: true }) : null }}
                     onError={console.warn}
                 />
             );
@@ -108,7 +132,7 @@ export default class App extends Component {
         }
         return (
             <>
-                <HomeScreen pc={pc} token={this.state.token} />
+                <HomeScreen token={this.state.token} />
                 <View style={{ borderWidth: 0.6, padding: 3, position: 'absolute', top: 50, left: 20, backgroundColor: "rgba( 255,255,255, 0.5 )" }}>
                     <Button
                         title="Log out"

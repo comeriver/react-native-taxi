@@ -30,7 +30,7 @@ export default class LoginForm extends Component {
         <Text style={{ margin: 20 }}> </Text>
 
         <TouchableOpacity onPress={this.props.handleSignIn} style={styles.button}>
-            <Text style={styles.buttonText}>Request Taxi</Text>
+            <Text style={styles.buttonText}>Request a Ride</Text>
         </TouchableOpacity>
       </View>
     )

@@ -8,23 +8,32 @@ import PageCarton from '../pagecarton.js'
 axios.defaults.baseURL = baseUrl;
 
 export default class Login extends Component {
+    _isMounted = false;
+
     constructor(props) {
         super(props);
         this.state = {
-            email: props.email ? props.email : "example@gmail.com",
+            email: props.email ? props.email : "",
             password: '',
-            phone_number: props.phone_number ? props.phone_number : "08055500555",
+            phone_number: props.phone_number ? props.phone_number : "",
             errorMessage: ''
         }
         this.handleChange = this.handleChange.bind(this);
         this.handleSignIn = this.handleSignIn.bind(this);
         this.handleSignUp = this.handleSignUp.bind(this);
     }
+    componentDidMount() {
+        this._isMounted = true;
+    }
+
+    componentWillUnmount() {
+        this._isMounted = false;
+    }
 
     handleChange(name, value) {
-        this.setState({
+        this._isMounted ? this.setState({
             [name]: value
-        })
+        }) : null
     }
 
     async handleSignUp() {
@@ -32,7 +41,7 @@ export default class Login extends Component {
     }
 
     async handleSignIn() {
-        this.setState({ errorMessage: '' });
+        this._isMounted ? this.setState({ errorMessage: '' }) : null;
         try {
             const { email, phone_number } = this.state;
 
@@ -61,7 +70,7 @@ export default class Login extends Component {
 
         } catch (error) {
            // console.log(error);
-            this.setState({ errorMessage: "There is an error logging in" });
+           this._isMounted ? this.setState({ errorMessage: "There is an error logging in" }) : null;
         }
     }
     render() {

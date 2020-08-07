@@ -1,14 +1,15 @@
 import React, { Component } from 'react';
-import { Linking, Button, View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image } from 'react-native';
+import { Linking, Button, View, StyleSheet, TextInput, Text, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Image, Vibration } from 'react-native';
 import MapView from 'react-native-maps';
 import PolyLine from '@mapbox/polyline';
-import _ from 'lodash';
+import _, { random } from 'lodash';
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
 import Config from '../config';
 
 export default class Passenger extends Component {
     timer;
+    _isMounted = false;
     constructor(props) {
         super(props);
         this.state = this.resetState(false);
@@ -18,9 +19,12 @@ export default class Passenger extends Component {
         this.resetState = this.resetState.bind(this);
         this.watchId = {}
     }
+    componentDidMount() {
+        this._isMounted = true;
+    }
 
     componentWillUnmount() {
-        this.resetState();
+        this._isMounted = false;
     }
 
     resetState(reset = true) {
@@ -36,7 +40,7 @@ export default class Passenger extends Component {
             booking_id: "",
             status: 0,
             driverLocation: null,
-            buttonText: "REQUEST TAXI 🚗"
+            buttonText: "Request a ride 🚗"
         };
         if (reset) {
             try {
@@ -60,7 +64,7 @@ export default class Passenger extends Component {
                     .catch((error) => {
                         console.error("Could not confirm a booking cancelation on server" + error);
                     });
-                this.setState(newState)
+                    this._isMounted ? this.setState(newState) : null
             } catch (error) {
                 console.error(error);
             }
@@ -83,10 +87,10 @@ export default class Passenger extends Component {
             }
             const json = await response.json();
             //    console.log( json );
-            this.setState({
+            this._isMounted ? this.setState({
                 predictions: json.predictions,
-                buttonText: 'REQUEST TAXI 🚗'
-            })
+                buttonText: 'Request a ride 🚗'
+            }) : null;
         } catch (err) {
             console.error(err);
         }
@@ -111,7 +115,7 @@ export default class Passenger extends Component {
             const pointCoords = points.map((point) => {
                 return { latitude: point[0], longitude: point[1] }
             });
-            this.setState({ pointCoords, predictions: [], destination: destinationName, routeResponse: json });
+            this._isMounted ? this.setState({ pointCoords, predictions: [], destination: destinationName, routeResponse: json }) :null;
             Keyboard.dismiss();
             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 20, bottom: 20, left: 20, right: 20 } })
 
@@ -151,11 +155,12 @@ export default class Passenger extends Component {
                     }
                     if (data.goodnews) {
 
+                        Vibration.vibrate( [2000, 1000, 2000] )
 
-                        this.setState({
+                        this._isMounted ? this.setState({
                             buttonText: 'BOOKING MADE. CONNECTING TO A RIDE',
                             booking_id: data.booking_id
-                        });
+                        }) : null;
                         this.refreshStatus();
                         return true;
                     }
@@ -164,7 +169,7 @@ export default class Passenger extends Component {
 
         } catch (error) {
             console.warn(error);
-            this.setState({ errorMessage: "There is an error logging in" });
+            this._isMounted ? this.setState({ errorMessage: "There is an error logging in" }) : null;
         }
     }
 
@@ -186,9 +191,9 @@ export default class Passenger extends Component {
                 //    console.log( data );
                 //    console.log( this.state );
                     if (!data) {
-                        this.setState({
+                        this._isMounted ? this.setState({
                             buttonText: 'Connection error, still trying...',
-                        });
+                        }) : null;
                         this.refreshStatus();
                         return false;
                     }
@@ -197,17 +202,22 @@ export default class Passenger extends Component {
                         return false;
                     }
                     if (data.goodnews) {
-                        if (!data.status) {
+                        if (!data.status && this._isMounted ) {
                             this.setState({
-                                buttonText: 'Looking for driver...',
+                                buttonText: 'Looking for ride...',
                             });
                             this.refreshStatus();
                             return false;
                         }
                         else {
-                            this.setState({
+
+                            if( data.status !== this.state.status )
+                            {
+                                Vibration.vibrate( [2000, 2000, 1000, 2000] )
+                            }
+                            this._isMounted ? this.setState({
                                 status: data.status,
-                            });
+                            }) : null;
                         }
                         if (!data.driver_location) {
                             data.driver_location = this.state.pointCoords[this.state.pointCoords.length - 1];
@@ -215,68 +225,68 @@ export default class Passenger extends Component {
                         const pointCoords = [...this.state.pointCoords, data.driver_location];
                         switch (data.status) {
                             case -2:
-                                this.setState({
+                                this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     buttonText: 'You canceled the trip'
-                                });
+                                }) : null;
                                 break;
                             case -1:
-                                this.setState({
+                                this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
-                                    buttonText: 'Driver canceled the trip'
-                                });
+                                    buttonText: 'Rider canceled the trip'
+                                }) : null;
                                 break;
                             case 1:
-                                this.setState({
+                                this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'DRIVER IS ON THE WAY'
-                                });
+                                    buttonText: 'Ride on the way'
+                                }) : null;
                                 this.refreshStatus();
                                 break;
                             case 2:
-                                this.setState({
+                                this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
                                     driverLocation: data.driver_location,
                                     buttonText: 'Your ride has arrived'
-                                });
+                                }) : null;
                                 this.refreshStatus();
                                 break;
                             case 3:
-                                this.setState({
+                                this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
                                     buttonText: 'You are enroute'
-                                });
+                                }) : null;
                                 this.refreshStatus();
                                 break;
                             case 4:
-                                this.setState({
+                                this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
                                     buttonText: 'Trip Ended. Make Payment!',
                                     buttonAction: () => {
-                                        Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
+                                        Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/object/TaxiApp_Booking_Pay/?booking_id=" + this.state.booking_id);
                                     }
-                                });
+                                }) : null;
                                     this.refreshStatus();
                                 break;
                                 case 5:
-                                    this.setState({
+                                    this._isMounted ? this.setState({
                                         lookingForDriver: false,
                                         driverIsOnTheWay: false,
                                         driverLocation: data.driver_location,
                                         buttonText: 'Payment Made. View Summary!',
                                         buttonAction: () => {
-                                            Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
+                                            Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/object/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
                                         }
-                                    });
+                                    }) : null;
                                     //    this.refreshStatus();
                                 break;
                             }
@@ -296,7 +306,7 @@ export default class Passenger extends Component {
 
         } catch (error) {
             console.warn(error);
-            this.setState({ errorMessage: "There is an error logging in" });
+            this._isMounted ? this.setState({ errorMessage: "There is an error logging in" }) : null;
         }
     }
 
@@ -309,8 +319,19 @@ export default class Passenger extends Component {
         let marker = null;
         let cancelButton = null;
         let active = this.state.status ? true : false;
+        let viewBookingInfo = () =>
+        {
+            if( this.state.booking_id )
+            {
+                Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );
+            }
+            else
+            {
+                alert( "Booking has not been confirmed yet." );
+            }
+        };
 
-        if (this.state.driverIsOnTheWay) {
+        if (this.state.driverIsOnTheWay && this.state.driverLocation) {
             active = true;
             driverMarker = (
                 <MapView.Marker coordinate={this.state.driverLocation}>
@@ -338,15 +359,25 @@ export default class Passenger extends Component {
         }
         if (active) {
             cancelButton = (
-                <View style={{ borderWidth: 1, position: 'absolute', top: 50, right: 20 }}>
+                <>
+                <View style={{  borderWidth: 0.6, padding: 3, backgroundColor: "rgba( 255,255,255, 0.5 )", position: 'absolute', top: 50, right: 20 }}>
                     <Button
-                        title=" x  Cancel"
+                        title="Cancel"
                         color="#000"
                         onPress={this.resetState}
                         style={{ backgroundColor: 'white', padding: 30 }}
                         accessibilityLabel="Back" />
                 </View>
-            )
+                <View style={{  borderWidth: 0.6, padding: 3, backgroundColor: "rgba( 255,255,255, 0.5 )", position: 'absolute', top: 50, right: 110 }}>
+                <Button
+                    title="Info"
+                    color="#000"
+                    onPress={viewBookingInfo}
+                    style={{ backgroundColor: 'white', padding: 30 }}
+                    accessibilityLabel="Back" />                        
+                </View>
+            </>
+        )
         }
 
         return (
@@ -363,11 +394,11 @@ export default class Passenger extends Component {
                     onUserLocationChange={this._getLocationAsync}
                     showsUserLocation={true}
                 >
-                    <MapView.Polyline
+                    {this.state.pointCoords.length > 0 ? ( <MapView.Polyline
                         coordinates={this.state.pointCoords}
                         strokeWidth={3}
                         strokeColor="red"
-                    />
+                    /> ) : null}
                     {
                         this.state.pointCoords.length > 0 ? (
                             <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length - 1]} title={this.state.destination} />
@@ -376,7 +407,7 @@ export default class Passenger extends Component {
                     {driverMarker}
                 </MapView>
                 <TextInput placeholder="Enter destination..." value={this.state.destination} onChangeText={(destination) => {
-                    this.setState({ destination })
+                    (this._isMounted ? this.setState({ destination }) : null)
                     this.onChangeDestinationDebounced(destination);
                 }}
                     style={styles.destinationInput}

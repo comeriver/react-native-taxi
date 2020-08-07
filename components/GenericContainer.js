@@ -6,6 +6,8 @@ import * as Permissions from 'expo-permissions';
 
 export default function genericContainer(WrappedComponent){
     return class extends Component{
+        _isMounted = false;
+
         constructor(props){
             super(props);
             this.state = {
@@ -14,19 +16,24 @@ export default function genericContainer(WrappedComponent){
             }
             this._getLocationAsync = this._getLocationAsync.bind(this);
         }
-
+    
         componentDidMount() {
+            this._isMounted = true;
             this._getLocationAsync();  
+        }
+
+        componentWillUnmount() {
+            this._isMounted = false;
         }
 
         _getLocationAsync = async () => {
             let { status, permissions } = await Permissions.askAsync(Permissions.LOCATION);
             if (status !== 'granted') {
               Alert.alert('We needs to use your location to show routes and get a ride. Please allow in Settings')
-              this.setState({
+              this._isMounted ? this.setState({
                 locationResult: 'Permission to access location was denied.',
                 location,
-              });
+              }) : null;
             }
             else if (Platform.OS === 'ios' && permissions.location.ios.scope !== 'always'){     
                 Alert.alert('Please allow the app to always access your location in Settings');
@@ -34,7 +41,7 @@ export default function genericContainer(WrappedComponent){
             else
             {
                 let location = await Location.getCurrentPositionAsync({});
-                location ? this.setState({ locationResult: JSON.stringify(location), location, }) : location;
+                location && this._isMounted ? this.setState({ locationResult: JSON.stringify(location), location, }) : location;
             }
          
         }

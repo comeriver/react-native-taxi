@@ -8,11 +8,15 @@
       "ios",
       "android"
     ],
-    "version": "1.0.0",
+    "notification": {
+        "icon": "./assets/flex-icon.png",
+        "androidMode": "default"
+      },
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/flex-icon.png",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/flex-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -24,18 +28,33 @@
     ],
     "ios": {
       "bundleIdentifier": "ng.com.flexcab.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ],
+        "NSCameraUsageDescription": "Why are you requesting access to      the device’s camera?",
+        "NSLocationWhenInUseUsageDescription": "Why are you requesting access to the device’s camera?"
+    },
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": ""
+        "googleMapsApiKey": "AIzaSyBf8xSLEZz5EZNh9xW5AlQ69I6AOlgIPZs"
       }
     },
     "android": {
       "package": "ng.com.flexcab.app",
       "config": {
         "googleMaps": {
-          "apiKey": ""
+          "apiKey": "AIzaSyBf8xSLEZz5EZNh9xW5AlQ69I6AOlgIPZs"
         }
-      }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "VIBRATE",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "versionCode": 2
+
     }
   }
 }
