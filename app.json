@@ -38,14 +38,14 @@
     },
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "AIzaSyBf8xSLEZz5EZNh9xW5AlQ69I6AOlgIPZs"
+        "googleMapsApiKey": ""
       }
     },
     "android": {
       "package": "ng.com.flexcab.app",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBf8xSLEZz5EZNh9xW5AlQ69I6AOlgIPZs"
+          "apiKey": ""
         }
       },
       "permissions": [
