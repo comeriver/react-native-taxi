@@ -48,7 +48,7 @@ export default class Login extends Component {
             PageCarton.setStaticResource( { name: "default-phone_number", value: phone_number } )
             PageCarton.getServerResource({ 
                 name: "authentication",
-                url: "/widgets/TaxiApp_Login",
+                url: "/widgets/NativeApp_Authenticate_OTP",
                 refresh: true,
                 expiry: false,
                 postData: { email, phone_number } 

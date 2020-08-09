@@ -2,7 +2,7 @@ import { AsyncStorage, Linking } from 'react-native';
 import Config from './config';
 import { expo } from './app.json'
 
-const namespace = 'PAGECARTON-x';
+const namespace = 'PAGECARTON-xy';
 global[namespace] = {};
 
 
@@ -139,7 +139,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
         if (!Config.domain) {
             return new Promise( ( resolve, reject ) => { reject( "PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js" ) } )
         }
-        const pc = PageCarton.setup(
+        const pc = setup(
             {
                 scheme: "http",
                 domain: "localhost",
@@ -184,6 +184,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 return reject(message);
             }
             let authInfo = getStaticResource("authentication");
+        //    authInfo = {};
 
             //    console.log( url );
             //    console.log( authInfo );
@@ -200,10 +201,11 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 body: postData ? JSON.stringify(postData) : '',
             }).then((response) => {
                 if (response.status !== 200) {
+                //    response.text().then( text => alert( text ) );
                     const message = 'Looks like there was a problem. Status Code: ' + response.status;
                         console.log( link );
                     //    console.error( message );
-                    //    response.text().then( text => console.log( text ) );
+                    //   response.text().then( text => console.log( text ) );
                     return reject(message);
                 }
                 let data = {};
@@ -220,11 +222,17 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 return data;
             }).then((value) => {
                 
-                
+                if( ! value )
+                {
+                    return false;
+                }
+            //    console.log( link );
+            //    console.log( value );
+               
                 //  version enforcement
                 const expiredAppAction = () =>
                 {
-                    let link = PageCarton.getStaticResource("setup").homeUrl + "/widgets/NativeApp_Upgrade"
+                    let link = getStaticResource("setup").homeUrl + "/widgets/NativeApp_Upgrade"
                     if (Platform.OS === 'ios' && value.ios_download_link ) {
                         link = value.ios_download_link;
                     } else if( value.android_download_link ) {

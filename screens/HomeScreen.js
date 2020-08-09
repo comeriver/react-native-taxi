@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
 import Driver from './Driver'
 import Passenger from './Passenger';
 import genericContainer from '../components/GenericContainer';
+import PageCarton from '../pagecarton.js'
 
 const DriverWithGenericContainer = genericContainer(Driver);
 const PassengerWithGenericContainer = genericContainer(Passenger);
@@ -13,12 +14,21 @@ export default class HomeScreen extends Component {
         super(props);
         this.state = {
             isDriver: false,
+            siteInfo: false,
             isPassenger: false
         };
         this.handleChange = this.handleChange.bind(this);
     }
     componentDidMount() {
+
         this._isMounted = true;
+
+        //  retrive site info
+        PageCarton.getServerResource( { url: "Application_SiteInfo" } )
+        .then( siteInfo => {
+            this._isMounted ? this.setState( { siteInfo } ) : null
+        //   console.log( this.state )
+        } ); 
     }
 
     componentWillUnmount() {
@@ -34,10 +44,9 @@ export default class HomeScreen extends Component {
     render() {
 
         //  console.log( this.props.token?.auth_info );
-        if (this.props.token?.auth_info?.can_drive || this.state.isDriver) {
-            //     if (this.state.isDriver) {
+        if ( ( this.state.siteInfo?.driver_user_group && this.props.token?.auth_info?.access_level  == this.state.siteInfo.driver_user_group ) || this.state.isDriver) {
             return <DriverWithGenericContainer token={this.props.token} />
-        } else if (this.props.token?.auth_info?.can_drive === false || this.state.isPassenger) {
+        } else if ( this.state.siteInfo?.driver_user_group || this.state.isPassenger) {
             //    } else if (this.state.isPassenger) {
             return <PassengerWithGenericContainer token={this.props.token} />
         }

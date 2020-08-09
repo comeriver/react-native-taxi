@@ -54,6 +54,7 @@ export default class App extends Component {
             isReady: false,
             token: '',
             email: '',
+            site_info: {},
             phone_number: ''
         }
         this.handleChangeToken = this.handleChangeToken.bind(this);
@@ -80,13 +81,6 @@ export default class App extends Component {
             }
             this.handleChangeToken(data);
         })
-
-        //  retrive site info
-        PageCarton.getServerResource( { url: "Application_SiteInfo" } )
-        .then( site_info => {
-            this._isMounted ? this.setState( { site_info } ) : null
-        //    console.log( this.state )
-        } ); 
     }
  
     async cacheResourcesAsync() {
