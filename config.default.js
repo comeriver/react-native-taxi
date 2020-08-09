@@ -1,3 +1,8 @@
+/** 
+ * Rename this file into config.js
+ * 
+ */
+
 export default {
     googleMapsKey: "",
     scheme: "https",

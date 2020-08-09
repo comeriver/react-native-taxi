@@ -2,7 +2,7 @@ import { AsyncStorage, Linking } from 'react-native';
 import Config from './config';
 import { expo } from './app.json'
 
-const namespace = 'PAGECARTON-xy';
+const namespace = 'PAGECARTON-xyzz';
 global[namespace] = {};
 
 
@@ -139,14 +139,7 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
         if (!Config.domain) {
             return new Promise( ( resolve, reject ) => { reject( "PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js" ) } )
         }
-        const pc = setup(
-            {
-                scheme: "http",
-                domain: "localhost",
-                port: "8888",
-                path: "/taxi",
-            }
-        );
+        const pc = setup( Config );
         link = pc.homeUrl + url;
     }
     else {
