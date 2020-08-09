@@ -1,4 +1,4 @@
-import { AsyncStorage } from 'react-native';
+import { AsyncStorage, Linking } from 'react-native';
 import Config from './config';
 import { expo } from './app.json'
 
@@ -209,17 +209,6 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 let data = {};
                 try {
                     data = response.json()
-/*                 //    console.log( expo );
-                //    expo.version
-                    const expiredApp = () =>
-                    {
-                        open
-                    }
-                    if( data.supported_versions && data.supported_versions?.indexOf( expo.version ) == -1 )
-                    {
-                        expiredApp();
-                    }
-                    elseif( data.supported_versions ) */
                 }
                 catch (e) {
                     //   response.text().then( text => console.log( text ) );
@@ -230,7 +219,33 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 }
                 return data;
             }).then((value) => {
-                //   console.log( value );
+                
+                
+                //  version enforcement
+                const expiredAppAction = () =>
+                {
+                    let link = PageCarton.getStaticResource("setup").homeUrl + "/widgets/NativeApp_Upgrade"
+                    if (Platform.OS === 'ios' && value.ios_download_link ) {
+                        link = value.ios_download_link;
+                    } else if( value.android_download_link ) {
+                        link = value.android_download_link;
+                    }
+                    Linking.openURL( link );
+                }
+                if( value.supported_versions && value.supported_versions?.indexOf( expo.version ) == -1 )
+                {
+                    let message = "Your version of this app is outdated. Please update immediately.";
+                    alert( message );
+                    expiredAppAction();
+                    return reject( message );
+                }
+                else if( value.current_stable_version && expo.version != value.current_stable_version )
+                {
+                    let message = "Your version of this app is outdated. Please update as soon as possible.";
+                    alert( message );
+                    expiredAppAction();
+                }
+
                 setStaticResource({ name, value, expiry });
                 if (value) {
                     return resolve(value)
