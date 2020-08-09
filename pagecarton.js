@@ -2,7 +2,7 @@ import { AsyncStorage, Linking } from 'react-native';
 import Config from './config';
 import { expo } from './app.json'
 
-const namespace = 'PAGECARTON-xyzz';
+const namespace = 'PAGECARTON-hkl';
 global[namespace] = {};
 
 
