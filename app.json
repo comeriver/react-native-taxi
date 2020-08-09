@@ -12,7 +12,8 @@
         "icon": "./assets/flex-icon.png",
         "androidMode": "default"
       },
-    "version": "1.0.1",
+    "version": "1.0.2",
+    "versionCode": 3,
     "orientation": "portrait",
     "icon": "./assets/flex-icon.png",
     "splash": {
@@ -52,9 +53,7 @@
         "ACCESS_COARSE_LOCATION",
         "VIBRATE",
         "ACCESS_FINE_LOCATION"
-      ],
-      "versionCode": 2
-
+      ]
     }
   }
 }
