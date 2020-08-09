@@ -125,8 +125,8 @@ export default class Driver extends Component {
             const pointCoords = points.map((point) => {
                 return { latitude: point[0], longitude: point[1] }
             });
-            console.log(this.state.routeResponse?.geocoded_waypoints[0].place_id )
-            console.log(destinationPlaceId)
+            //  console.log(this.state.routeResponse?.geocoded_waypoints[0].place_id )
+            //  console.log(destinationPlaceId)
             let newState = { pointCoords };
             if( ! this.state.routeResponse?.geocoded_waypoints[0].place_id || this.state.routeResponse?.geocoded_waypoints[0].place_id == destinationPlaceId )
             {
