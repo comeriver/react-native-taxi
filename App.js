@@ -41,11 +41,6 @@ const pc = PageCarton.setup(
         path: "/taxi",
     }
 );
-//  How to retrieve posts 
-/*  PageCarton.getServerResource( { name: "posts" } ).then( ( data ) =>
-{
-    console.log( data );
-}); */
 
 
 
@@ -90,7 +85,7 @@ export default class App extends Component {
         PageCarton.getServerResource( { url: "Application_SiteInfo" } )
         .then( site_info => {
             this._isMounted ? this.setState( { site_info } ) : null
-            console.log( this.state )
+        //    console.log( this.state )
         } ); 
     }
  

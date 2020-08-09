@@ -43,6 +43,7 @@ export default function genericContainer(WrappedComponent){
                 let location = await Location.getCurrentPositionAsync({});
                 location && this._isMounted ? this.setState({ locationResult: JSON.stringify(location), location, }) : location;
             }
+            //    console.log( permissions.location.ios )
          
         }
 

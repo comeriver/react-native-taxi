@@ -33,6 +33,7 @@ export default class HomeScreen extends Component {
 
     render() {
 
+        //  console.log( this.props.token?.auth_info );
         if (this.props.token?.auth_info?.can_drive || this.state.isDriver) {
             //     if (this.state.isDriver) {
             return <DriverWithGenericContainer token={this.props.token} />

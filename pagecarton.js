@@ -1,5 +1,6 @@
 import { AsyncStorage } from 'react-native';
 import Config from './config';
+import { expo } from './app.json'
 
 const namespace = 'PAGECARTON-x';
 global[namespace] = {};
@@ -208,6 +209,17 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
                 let data = {};
                 try {
                     data = response.json()
+/*                 //    console.log( expo );
+                //    expo.version
+                    const expiredApp = () =>
+                    {
+                        open
+                    }
+                    if( data.supported_versions && data.supported_versions?.indexOf( expo.version ) == -1 )
+                    {
+                        expiredApp();
+                    }
+                    elseif( data.supported_versions ) */
                 }
                 catch (e) {
                     //   response.text().then( text => console.log( text ) );

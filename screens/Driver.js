@@ -7,6 +7,7 @@ import PolyLine from '@mapbox/polyline';
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
 import Config from '../config';
+import { resolveUri } from 'expo-asset/build/AssetSources';
 
 let locationsArray = [];
 if (!TaskManager.isTaskDefined('locationUpdates')) {
@@ -22,6 +23,8 @@ if (!TaskManager.isTaskDefined('locationUpdates')) {
 export default class Driver extends Component {
 
     _isMounted = false;
+    _bookingBlacklist = [];
+    siteInfo = PageCarton.getStaticResource( "Application_SiteInfo" );
 
     constructor(props) {
         super(props);
@@ -61,6 +64,7 @@ export default class Driver extends Component {
             searchTryCount: 0,
             status: 0,
             driver_id: "",
+            routeToPickUp: null,
             routeResponse: null
         };
         try {
@@ -99,26 +103,38 @@ export default class Driver extends Component {
             }
 
             // console.log(this.state.predictions);
-            const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Config.googleMapsKey}`;
-            const response = await fetch(apiUrl);
-            if (response.status !== 200) {
-                console.error('Looks like there was a problem. Status Code: ' +
-                    response.status);
-                //    console.log( response.url );
-                //    response.text().then( text => console.log( text ) );
+            const routeToDestination = await PageCarton.getServerResource({
+                name: "route",
+                url: "/widgets/Places_Route?destination=place_id:" + destinationPlaceId + "&origin=" + this.props.location.coords.latitude + "," + this.props.location.coords.longitude,
+                refresh: true
+            });
+            //   console.log(this.props.location.coords);
+            if( ! routeToDestination )
+            {
                 return false;
             }
-            const json = await response.json();
-            if ( ! json.routes[0]?.overview_polyline?.points ) {
+            if( routeToDestination.badnews )
+            {
+                alert( routeToDestination.badnews );
                 return false;
             }
-            const points = PolyLine.decode(json.routes[0].overview_polyline.points);
+            if ( ! routeToDestination.routes[0]?.overview_polyline?.points ) {
+                return false;
+            }
+            const points = PolyLine.decode(routeToDestination.routes[0].overview_polyline.points);
             const pointCoords = points.map((point) => {
                 return { latitude: point[0], longitude: point[1] }
             });
-            this._isMounted ? this.setState({ pointCoords }) : null;
+            console.log(this.state.routeResponse?.geocoded_waypoints[0].place_id )
+            console.log(destinationPlaceId)
+            let newState = { pointCoords };
+            if( ! this.state.routeResponse?.geocoded_waypoints[0].place_id || this.state.routeResponse?.geocoded_waypoints[0].place_id == destinationPlaceId )
+            {
+                newState.routeToPickUp = routeToDestination;
+            }
+            this._isMounted ? this.setState( newState ) : null;
             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 20, bottom: 20, left: 20, right: 20 } })
-
+            return routeToDestination;
         } catch (error) {
             console.warn(error)
         }
@@ -158,14 +174,14 @@ export default class Driver extends Component {
                                 status: 0
                             }
                         ) : null;
-                        //    console.log(userInfo);
-
+                     //   console.log( this._bookingBlacklist );
                         return PageCarton.getServerResource({
-                            name: "book-passenger-x",
+                            name: "find-passenger-x",
                             url: "/widgets/TaxiApp_Booking_Driver",
                             refresh: true,
                             postData: {
                                 driver_id: this.state.driver_id,
+                                booking_blacklist: this._bookingBlacklist,
                                 driver_location: { latitude: this.props.location.coords.latitude, longitude: this.props.location.coords.longitude },
                             }
                         })
@@ -193,22 +209,34 @@ export default class Driver extends Component {
                         }
                         if (data.goodnews) {
 
-                            if (!data.route_info) {
+                            if (!data.route_info || ! data.booking_id ) {
                                 //    alert("No route found for passenger");
                                 //    this.resetState();
                                 this.refreshPassengerSearch();
                                 return false;
                             }
-                            this._isMounted ? this.setState({
-                                lookingForPassenger: false,
-                                passengerFound: true,
-                                booking_id: data.booking_id,
-                                routeResponse: data.route_info
-                            }) : null;
-                            Vibration.vibrate([2000, 2000, 1000, 2000])
-                            this.refreshPassengerSearch();
-                            this.getRouteDirections(data.route_info.geocoded_waypoints[0].place_id);
-                            return true;
+
+                            this.getRouteDirections(data.route_info.geocoded_waypoints[0].place_id)
+                            .then( routeInfo =>
+                                {
+                                    //    console.log( routeInfo );
+                                    this._bookingBlacklist.push( data.booking_id );
+                                //    console.log( this._bookingBlacklist );
+                                    if( ! routeInfo )
+                                    {
+                                        return false;
+                                    }        
+                                    this._isMounted ? this.setState({
+                                        lookingForPassenger: false,
+                                        passengerFound: true,
+                                        booking_id: data.booking_id,
+                                        routeResponse: data.route_info
+                                    }) : null;
+                                    Vibration.vibrate([2000, 2000, 1000, 2000])
+                                    this.refreshPassengerSearch();
+                                    return true;
+                                }
+                            )
                         }
 
                     })
@@ -217,7 +245,6 @@ export default class Driver extends Component {
                 console.warn(error);
                 this._isMounted ? this.setState({ errorMessage: "There is an error logging in" }) : null;
             }
-
         }
     }
 
@@ -437,7 +464,7 @@ export default class Driver extends Component {
         let cancelButton = null;
         let active = false;
         let findPassengerActIndicator = null;
-        let passengerSearchText = "FIND PASSENGER 👥";
+        let passengerSearchText = "Look for " + ( (this.siteInfo?.passenger_term) ? this.siteInfo.passenger_term : 'requests' );
         let bottomButtomFunction = () => {
             this._isMounted ? this.setState({ lookingForPassenger: true }) : null;
             this.lookForPassenger();
@@ -446,7 +473,7 @@ export default class Driver extends Component {
 
         if (this.state.lookingForPassenger) {
             active = true;
-            passengerSearchText = 'FINDING PASSENGER... (' + this.state.searchTryCount + ')';
+            passengerSearchText = 'Looking for ' + ( (this.siteInfo?.passenger_term) ? this.siteInfo.passenger_term : 'requests' ) + ' ... (' + this.state.searchTryCount + ')';
             findPassengerActIndicator = (
                 <ActivityIndicator size='large' animating={this.state.lookingForPassenger} />
             );
@@ -454,8 +481,8 @@ export default class Driver extends Component {
 
         if (this.state.passengerFound) {
             active = true;
-
-            passengerSearchText = 'FOUND PASSENGER! ACCEPT RIDE?';
+            //    console.log( this.state.routeResponse );
+            passengerSearchText = 'Accept pick-up request from ' + this.state.routeResponse?.routes[0]['legs'][0]['start_address'] + " (" +  (this.state.routeToPickUp?.routes[0]['legs'][0]['duration']['text']) + " away)";
             bottomButtomFunction = this.acceptPassengerRequest;
         }
 
@@ -469,11 +496,15 @@ export default class Driver extends Component {
                 alert("Booking has not been confirmed yet.");
             }
         };
+        const checkDirectiontoDestination = () => {
+            this.getRouteDirections( this.state.routeResponse?.geocoded_waypoints[1].place_id );
+        };
+
 
         switch (this.state.status) {
             case -2:
                 active = true;
-                passengerSearchText = 'Trip canceled by passenger. View Summary!';
+                passengerSearchText = 'Trip canceled by ' + ( (this.siteInfo?.passenger_term) ? this.siteInfo.passenger_term : 'customer' ) + '. View Summary!';
                 bottomButtomFunction = function () {
                     ;
                 };
@@ -487,21 +518,23 @@ export default class Driver extends Component {
                 break;
             case 1:
                 active = true;
-                passengerSearchText = 'At passenger location!';
+                passengerSearchText = 'At ' + ( (this.siteInfo?.passenger_term) ? this.siteInfo.passenger_term : 'customer' ) + ' location!';
                 bottomButtomFunction = function () {
                     updateStatus(2);
                 };
                 break;
             case 2:
                 active = true;
-                passengerSearchText = 'Start Trip!';
-                bottomButtomFunction = function () {
+                passengerSearchText = 'Start ' + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : 'trip' ) + '!';
+
+                bottomButtomFunction = function ( ) {
                     updateStatus(3);
+                    checkDirectiontoDestination();
                 };
                 break;
             case 3:
                 active = true;
-                passengerSearchText = 'End Trip';
+                passengerSearchText = '' + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : 'trip' ) + ' Completed';
                 bottomButtomFunction = function () {
                     updateStatus(4);
                     //   resetState();
@@ -509,7 +542,7 @@ export default class Driver extends Component {
                 break;
             case 4:
                 active = true;
-                passengerSearchText = 'Trip Ended. View Summary!';
+                passengerSearchText = '' + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : 'Request' ) + ' Completed. View Summary!';
                 bottomButtomFunction = viewBookingInfo;
                 break;
             case 5:
