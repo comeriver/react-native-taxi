@@ -5,11 +5,12 @@ import PolyLine from '@mapbox/polyline';
 import _, { random } from 'lodash';
 import BottomButton from '../components/BottomButton';
 import PageCarton from '../pagecarton.js'
-import Config from '../config';
 
 export default class Passenger extends Component {
     timer;
     _isMounted = false;
+    siteInfo = PageCarton.getStaticResource( "Application_SiteInfo" );
+
     constructor(props) {
         super(props);
         this.state = this.resetState(false);
@@ -40,14 +41,13 @@ export default class Passenger extends Component {
             booking_id: "",
             status: 0,
             driverLocation: null,
-            buttonText: "Request a ride 🚗"
+            buttonText: "Request pickup"
         };
         if (reset) {
             try {
 
-                PageCarton.getServerResource({ name: "login-taxiapp" })
+                PageCarton.getServerResource({ name: "authentication", local_request_only: true })
                     .then((userInfo) => {
-                     //   console.log( userInfo );
                         return PageCarton.getServerResource({
                             name: "cancel-booking",
                             url: "/widgets/TaxiApp_Booking_Cancel",
@@ -59,12 +59,12 @@ export default class Passenger extends Component {
                     }
                     )
                     .then((data) => {
-                    //    console.log( data );
+                        //    console.log( data );
                     })
                     .catch((error) => {
                         console.error("Could not confirm a booking cancelation on server" + error);
                     });
-                    this._isMounted ? this.setState(newState) : null
+                this._isMounted ? this.setState(newState) : null
             } catch (error) {
                 console.error(error);
             }
@@ -74,22 +74,20 @@ export default class Passenger extends Component {
     }
 
     async onChangeDestination(destination) {
-        const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${Config.googleMapsKey}&input=${destination}&location=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&radius=2000`;
         try {
-            //   console.log( apiUrl );
-            const response = await fetch(apiUrl);
-            if (response.status !== 200) {
-                console.error('Looks like there was a problem. Status Code: ' +
-                    response.status);
-                //   console.log( response.url );
-                response.text().then(text => console.log(text));
+
+            const response = await PageCarton.getServerResource({
+                name: "places",
+                url: "/widgets/Places?raw_response=1&q=" + destination + "&proximity=" + this.props.location.coords.latitude + "," + this.props.location.coords.longitude,
+                refresh: true
+            });
+            if( ! response )
+            {
                 return false;
             }
-            const json = await response.json();
-            //    console.log( json );
             this._isMounted ? this.setState({
-                predictions: json.predictions,
-                buttonText: 'Request a ride 🚗'
+                predictions: response.predictions,
+                buttonText: 'Request pick-up'
             }) : null;
         } catch (err) {
             console.error(err);
@@ -101,21 +99,28 @@ export default class Passenger extends Component {
             if (!this.map) {
                 return false;
             }
-            const apiUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${this.props.location.coords.latitude},${this.props.location.coords.longitude}&destination=place_id:${destinationPlaceId}&key=${Config.googleMapsKey}`;
-
-            const response = await fetch(apiUrl);
-            if (response.status !== 200) {
-                console.error('Looks like there was a problem. Status Code: ' +
-                    response.status);
-                response.text().then(text => console.log(text));
+            const json = await PageCarton.getServerResource({
+                name: "route",
+                url: "/widgets/Places_Route?destination=place_id:" + destinationPlaceId + "&origin=" + this.props.location.coords.latitude + "," + this.props.location.coords.longitude,
+                refresh: true
+            });
+            if( ! json )
+            {
                 return false;
             }
-            const json = await response.json();
+            if( json.badnews )
+            {
+                alert( json.badnews );
+                return false;
+            }
+            if (!json?.routes[0]?.overview_polyline?.points) {
+                return false;
+            }
             const points = PolyLine.decode(json.routes[0].overview_polyline.points);
             const pointCoords = points.map((point) => {
                 return { latitude: point[0], longitude: point[1] }
             });
-            this._isMounted ? this.setState({ pointCoords, predictions: [], destination: destinationName, routeResponse: json }) :null;
+            this._isMounted ? this.setState({ pointCoords, predictions: [], destination: destinationName, routeResponse: json }) : null;
             Keyboard.dismiss();
             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 20, bottom: 20, left: 20, right: 20 } })
 
@@ -129,7 +134,7 @@ export default class Passenger extends Component {
 
         try {
 
-            PageCarton.getServerResource({ name: "login-taxiapp" })
+            PageCarton.getServerResource({ name: "authentication", local_request_only: true })
                 .then((userInfo) => {
                     return PageCarton.getServerResource({
                         name: "make-booking",
@@ -150,15 +155,14 @@ export default class Passenger extends Component {
                         return false;
                     }
                     if (data.badnews) {
-                        alert( data.badnews );
+                        alert(data.badnews);
                         return false;
                     }
                     if (data.goodnews) {
 
-                        Vibration.vibrate( [2000, 1000, 2000] )
-
+                        Vibration.vibrate([2000, 1000, 2000])
                         this._isMounted ? this.setState({
-                            buttonText: 'BOOKING MADE. CONNECTING TO A RIDE',
+                            buttonText: "" + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : '' ) + ' Pick-up Confirmed... Please wait',
                             booking_id: data.booking_id
                         }) : null;
                         this.refreshStatus();
@@ -188,8 +192,8 @@ export default class Passenger extends Component {
                 method: 'GET'
             }).catch(error => console.log(error))
                 .then((data) => {
-                //    console.log( data );
-                //    console.log( this.state );
+                    //    console.log( data );
+                    //    console.log( this.state );
                     if (!data) {
                         this._isMounted ? this.setState({
                             buttonText: 'Connection error, still trying...',
@@ -202,18 +206,17 @@ export default class Passenger extends Component {
                         return false;
                     }
                     if (data.goodnews) {
-                        if (!data.status && this._isMounted ) {
+                        if (!data.status && this._isMounted) {
                             this.setState({
-                                buttonText: 'Looking for ride...',
+                                buttonText: "Connecting to " + ( (this.siteInfo?.driver_term) ? this.siteInfo.driver_term : 'operator' ),
                             });
                             this.refreshStatus();
                             return false;
                         }
                         else {
 
-                            if( data.status !== this.state.status )
-                            {
-                                Vibration.vibrate( [2000, 2000, 1000, 2000] )
+                            if (data.status !== this.state.status) {
+                                Vibration.vibrate([2000, 2000, 1000, 2000])
                             }
                             this._isMounted ? this.setState({
                                 status: data.status,
@@ -228,14 +231,14 @@ export default class Passenger extends Component {
                                 this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
-                                    buttonText: 'You canceled the trip'
+                                    buttonText: 'You canceled the ' + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : 'operation' )
                                 }) : null;
                                 break;
                             case -1:
                                 this._isMounted ? this.setState({
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
-                                    buttonText: 'Rider canceled the trip'
+                                    buttonText:  ( (this.siteInfo?.driver_term) ? this.siteInfo.driver_term : 'Operator' ) + ' canceled the ' + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : 'operation' )
                                 }) : null;
                                 break;
                             case 1:
@@ -243,7 +246,7 @@ export default class Passenger extends Component {
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'Ride on the way'
+                                    buttonText: ( (this.siteInfo?.driver_term) ? this.siteInfo.driver_term : 'Operator' ) + ' enroute to pick up '
                                 }) : null;
                                 this.refreshStatus();
                                 break;
@@ -252,7 +255,7 @@ export default class Passenger extends Component {
                                     lookingForDriver: false,
                                     driverIsOnTheWay: true,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'Your ride has arrived'
+                                    buttonText: ( (this.siteInfo?.driver_term) ? this.siteInfo.driver_term : 'Operator' ) + ' has arrived'
                                 }) : null;
                                 this.refreshStatus();
                                 break;
@@ -261,7 +264,7 @@ export default class Passenger extends Component {
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'You are enroute'
+                                    buttonText: ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : '' ) + ' in progress'
                                 }) : null;
                                 this.refreshStatus();
                                 break;
@@ -270,26 +273,26 @@ export default class Passenger extends Component {
                                     lookingForDriver: false,
                                     driverIsOnTheWay: false,
                                     driverLocation: data.driver_location,
-                                    buttonText: 'Trip Ended. Make Payment!',
+                                    buttonText: ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : '' ) + ' Completed. Please Make Payment!',
                                     buttonAction: () => {
                                         Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/object/TaxiApp_Booking_Pay/?booking_id=" + this.state.booking_id);
                                     }
                                 }) : null;
-                                    this.refreshStatus();
+                                this.refreshStatus();
                                 break;
-                                case 5:
-                                    this._isMounted ? this.setState({
-                                        lookingForDriver: false,
-                                        driverIsOnTheWay: false,
-                                        driverLocation: data.driver_location,
-                                        buttonText: 'Payment Made. View Summary!',
-                                        buttonAction: () => {
-                                            Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/object/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
-                                        }
-                                    }) : null;
-                                    //    this.refreshStatus();
+                            case 5:
+                                this._isMounted ? this.setState({
+                                    lookingForDriver: false,
+                                    driverIsOnTheWay: false,
+                                    driverLocation: data.driver_location,
+                                    buttonText: 'Payment Confirmed. View Summary!',
+                                    buttonAction: () => {
+                                        Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/object/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
+                                    }
+                                }) : null;
+                                //    this.refreshStatus();
                                 break;
-                            }
+                        }
                         if (this.map) {
                             this.map.fitToCoordinates(pointCoords, { edgePadding: { top: 30, bottom: 30, left: 30, right: 30 } });
                         }
@@ -297,7 +300,7 @@ export default class Passenger extends Component {
 
                     }
                     else {
-                    //    alert( "Server content error occured. Please try again later" );
+                        //    alert( "Server content error occured. Please try again later" );
                         this.resetState();
 
                     }
@@ -319,15 +322,12 @@ export default class Passenger extends Component {
         let marker = null;
         let cancelButton = null;
         let active = this.state.status ? true : false;
-        let viewBookingInfo = () =>
-        {
-            if( this.state.booking_id )
-            {
-                Linking.openURL( PageCarton.getStaticResource( "setup" ).homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id );
+        let viewBookingInfo = () => {
+            if (this.state.booking_id) {
+                Linking.openURL(PageCarton.getStaticResource("setup").homeUrl + "/widgets/TaxiApp_Booking_Info/?booking_id=" + this.state.booking_id);
             }
-            else
-            {
-                alert( "Booking has not been confirmed yet." );
+            else {
+                alert("Booking has not been confirmed yet.");
             }
         };
 
@@ -352,7 +352,7 @@ export default class Passenger extends Component {
                 <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length - 1]} />
             );
             getDriver = (
-                <BottomButton onPressFunction={!this.state.lookingForDriver && !this.state.driverIsOnTheWay && !this.state.status ? this.requestDriver : () => { this.state.buttonAction ? this.state.buttonAction() : alert("Already connecting to a ride") }} buttonText={this.state.buttonText}>
+                <BottomButton onPressFunction={!this.state.lookingForDriver && !this.state.driverIsOnTheWay && !this.state.status ? this.requestDriver : () => { this.state.buttonAction ? this.state.buttonAction() : alert("One  " + ( (this.siteInfo?.trip_term) ? this.siteInfo.trip_term : '' ) + " in progress" ) }} buttonText={this.state.buttonText}>
                     {findingDriverActIndicator}
                 </BottomButton>
             );
@@ -360,24 +360,24 @@ export default class Passenger extends Component {
         if (active) {
             cancelButton = (
                 <>
-                <View style={{  borderWidth: 0.6, padding: 3, backgroundColor: "rgba( 255,255,255, 0.5 )", position: 'absolute', top: 50, right: 20 }}>
-                    <Button
-                        title="Cancel"
-                        color="#000"
-                        onPress={this.resetState}
-                        style={{ backgroundColor: 'white', padding: 30 }}
-                        accessibilityLabel="Back" />
-                </View>
-                <View style={{  borderWidth: 0.6, padding: 3, backgroundColor: "rgba( 255,255,255, 0.5 )", position: 'absolute', top: 50, right: 110 }}>
-                <Button
-                    title="Info"
-                    color="#000"
-                    onPress={viewBookingInfo}
-                    style={{ backgroundColor: 'white', padding: 30 }}
-                    accessibilityLabel="Back" />                        
-                </View>
-            </>
-        )
+                    <View style={{ borderWidth: 0.6, padding: 3, backgroundColor: "rgba( 255,255,255, 0.5 )", position: 'absolute', top: 50, right: 20 }}>
+                        <Button
+                            title="Cancel"
+                            color="#000"
+                            onPress={this.resetState}
+                            style={{ backgroundColor: 'white', padding: 30 }}
+                            accessibilityLabel="Back" />
+                    </View>
+                    <View style={{ borderWidth: 0.6, padding: 3, backgroundColor: "rgba( 255,255,255, 0.5 )", position: 'absolute', top: 50, right: 110 }}>
+                        <Button
+                            title="Info"
+                            color="#000"
+                            onPress={viewBookingInfo}
+                            style={{ backgroundColor: 'white', padding: 30 }}
+                            accessibilityLabel="Back" />
+                    </View>
+                </>
+            )
         }
 
         return (
@@ -394,11 +394,11 @@ export default class Passenger extends Component {
                     onUserLocationChange={this._getLocationAsync}
                     showsUserLocation={true}
                 >
-                    {this.state.pointCoords.length > 0 ? ( <MapView.Polyline
+                    {this.state.pointCoords.length > 0 ? (<MapView.Polyline
                         coordinates={this.state.pointCoords}
                         strokeWidth={3}
                         strokeColor="red"
-                    /> ) : null}
+                    />) : null}
                     {
                         this.state.pointCoords.length > 0 ? (
                             <MapView.Marker coordinate={this.state.pointCoords[this.state.pointCoords.length - 1]} title={this.state.destination} />

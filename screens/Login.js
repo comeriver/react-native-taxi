@@ -13,9 +13,9 @@ export default class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            email: props.email ? props.email : "",
+            email: props.email ? props.email : PageCarton.getStaticResource( "default-email" ),
             password: '',
-            phone_number: props.phone_number ? props.phone_number : "",
+            phone_number: props.phone_number ? props.phone_number : PageCarton.getStaticResource( "default-phone_number" ),
             errorMessage: ''
         }
         this.handleChange = this.handleChange.bind(this);
@@ -44,9 +44,10 @@ export default class Login extends Component {
         this._isMounted ? this.setState({ errorMessage: '' }) : null;
         try {
             const { email, phone_number } = this.state;
-
+            PageCarton.setStaticResource( { name: "default-email", value: email } )
+            PageCarton.setStaticResource( { name: "default-phone_number", value: phone_number } )
             PageCarton.getServerResource({ 
-                name: "login-taxiapp",
+                name: "authentication",
                 url: "/widgets/TaxiApp_Login",
                 refresh: true,
                 expiry: false,
@@ -93,7 +94,7 @@ export default class Login extends Component {
                     handleSignUp={this.handleSignUp}
                 />
                 <Text style={styles.errorMessage}>{this.state.errorMessage}</Text>
-                <Image source={require('../assets/car.png')} style={styles.logo} />
+                {/* <Image source={require('../assets/car.png')} style={styles.logo} /> */}
             </View>
         )
     }

@@ -1,7 +1,7 @@
 import { AsyncStorage } from 'react-native';
 import Config from './config';
 
-const namespace = 'PAGECARTON-x-';
+const namespace = 'PAGECARTON-x';
 global[namespace] = {};
 
 
@@ -35,7 +35,7 @@ const getStorage = function () {
     return global.localStorage;
 }
 
-const setStaticResource = function ({ name, value, expiry = 3600, storage = true }) {
+const setStaticResource = function ({ name, value, expiry = 360000, storage = true }) {
     expiry = false !== expiry ? getExpiryDate(expiry) : false;
     let data = { value, expiry }
     storage ? getStorage().setItem(namespace + name, JSON.stringify(data)) : null;
@@ -99,12 +99,11 @@ const getStaticResource = function (name) {
                 return false;
             }
         }
-    //    console.log( value )
+        //    console.log( value )
         return value;
     }
-    else
-    {
-     //  console.log( name );
+    else {
+        //  console.log( name );
     }
 
 }
@@ -123,16 +122,21 @@ const resetStaticServerResource = function (name) {
     resetStaticResource(name)
 }
 
-const getServerResource = function ({ name, url, method, contentType, refresh, postData, expiry, responseType = "JSON" }) {
-    if (!url) {
+const getServerResource = function ({ name, url, method, contentType, refresh, postData, expiry, responseType = "JSON", local_request_only = false }) {
+    if (!url && urls[name]) {
         url = urls[name];
+    }
+    if (!name && url && url.charAt(0) !== '/') {
+        name = url;
+        url = '/tools/classplayer/get/object_name/' + url
+    }
+    if (!name && !url) {
+        return new Promise( ( resolve, reject ) => { reject( "No URL or Name Set" ) } )
     }
     let link = '';
     if (!getStaticResource("setup") || !getStaticResource("setup").homeUrl) {
-        if( ! Config.domain )
-        {
-            console.error("PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js")
-            return false;
+        if (!Config.domain) {
+            return new Promise( ( resolve, reject ) => { reject( "PageCarton needs to be set up first before use. Use PAGECARTON.setup() to set up PageCarton in your App.js" ) } )
         }
         const pc = PageCarton.setup(
             {
@@ -144,94 +148,85 @@ const getServerResource = function ({ name, url, method, contentType, refresh, p
         );
         link = pc.homeUrl + url;
     }
-    else
-    {
+    else {
         link = getStaticResource("setup").homeUrl + url;
     }
-//    console.log( link );
-    return new Promise((resolve, reject ) => {
-    //    console.log( name ); 
-
-        
-            if (getStaticResource(name)) {
-                if (!refresh)
+    //    console.log( link );
+    return new Promise((resolve, reject) => {
+        if (getStaticResource(name)) {
+            if (!refresh)
                 return resolve(getStaticResource(name))
-            }
-            else
-            {
-            //    console.log( name );
-            }
-            let data;
-            getStorage().getItem(namespace + name).then( data => {
-                //    console.log( data );
-                    if (data !== null) {
-                        //    console.log( data );
-                        data = JSON.parse(data);
-                        let value = data.value
-                        let expiry = data.expiry
-                        if ( expiry ) {
-                            if (new Date(expiry) < (new Date())) {
-                                resetStaticResource(name);
-                                value = undefined;
-                            }
-                        }
-                        if( value )
-                        {
-                            setStaticResource({ name, value, expiry, storage: false });
-                            if (!refresh)
-                            return resolve( value );
-                        }
-                    //    console.log( value );
+        }
+        let data;
+        getStorage().getItem(namespace + name).then(data => {
+            if (data !== null) {
+                data = JSON.parse(data);
+                let value = data.value
+                let expiry = data.expiry
+                if (expiry) {
+                    if (new Date(expiry) < (new Date())) {
+                        resetStaticResource(name);
+                        value = undefined;
                     }
-                    throw new Error( "record not found, need to request from server" );
-                       
-                }  ).catch( error => {
+                }
+                if (value) {
+                    setStaticResource({ name, value, expiry, storage: false });
+                    if (!refresh)
+                        return resolve(value);
+                }
+            }
+            throw new Error("record not found, need to request from server");
 
-                    if (!url) {
-                        const message = "No URL supplied for request " + name
-                        //    console.log( "rejected" ); 
-                        return reject( message );
-                    }
-                    fetch(link, {
-                        method: method ? method : 'POST',
-                        headers: {
-                            Accept: contentType ? contentType : 'application/json',
-                            'Content-Type': contentType ? contentType : 'application/json',
-                            "AYOOLA-PLAY-MODE": responseType
-                        },
-                        body: postData ? JSON.stringify(postData) : '',
-                    }).then((response) => { 
-                        if (response.status !== 200) {
-                            const message = 'Looks like there was a problem. Status Code: ' + response.status;
-                        //    console.error( message );
-                            //    response.text().then( text => console.log( text ) );
-                            return reject( message );
-                        }
-                        let data = {};    
-                        try
-                        {
-                            data = response.json()
-                        }
-                        catch( e )
-                        {
-                         //   response.text().then( text => console.log( text ) );
-                           console.warn( e )
-                           
-                        //    let message = "Invalid response received from server"
-                        //    alert( message ); 
-                        }
-                        return data;
-                    } ).then((value) => {
-                     //   console.log( value );
-                        setStaticResource({ name, value, expiry });
-                        if( value )
-                        { 
-                            return resolve(value)
-                        }
-                    }).catch((error) => {
-                        console.warn( error );
-                    });
-                } )
+        }).catch(error => {
+            if (!url || local_request_only) {
+                const message = "No URL supplied for request " + name
+                return reject(message);
+            }
+            let authInfo = getStaticResource("authentication");
+
+            //    console.log( url );
+            //    console.log( authInfo );
+
+            fetch(link, {
+                method: method ? method : 'POST',
+                headers: {
+                    Accept: contentType ? contentType : 'application/json',
+                    'Content-Type': contentType ? contentType : 'application/json',
+                    "AYOOLA-PLAY-MODE": responseType,
+                    "auth-token": authInfo?.auth_info?.auth_token,
+                    "auth-user-id": authInfo?.auth_info?.user_id
+                },
+                body: postData ? JSON.stringify(postData) : '',
+            }).then((response) => {
+                if (response.status !== 200) {
+                    const message = 'Looks like there was a problem. Status Code: ' + response.status;
+                        console.log( link );
+                    //    console.error( message );
+                    //    response.text().then( text => console.log( text ) );
+                    return reject(message);
+                }
+                let data = {};
+                try {
+                    data = response.json()
+                }
+                catch (e) {
+                    //   response.text().then( text => console.log( text ) );
+                    console.warn(e)
+
+                    //    let message = "Invalid response received from server"
+                    //    alert( message ); 
+                }
+                return data;
+            }).then((value) => {
+                //   console.log( value );
+                setStaticResource({ name, value, expiry });
+                if (value) {
+                    return resolve(value)
+                }
+            }).catch((error) => {
+                console.warn(error);
+            });
+        })
 
 
 
@@ -242,6 +237,7 @@ export default {
     setup,
     getServerResource,
     getStaticServerResource,
+    setStaticResource,
     getStaticResource,
     resetStaticResource
 }

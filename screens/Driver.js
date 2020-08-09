@@ -65,7 +65,7 @@ export default class Driver extends Component {
         };
         try {
 
-            PageCarton.getServerResource({ name: "login-taxiapp" })
+            PageCarton.getServerResource({ name: "authentication", local_request_only: true })
                 .then((userInfo) => {
                     return PageCarton.getServerResource({
                         name: "cancel-booking",
@@ -109,6 +109,9 @@ export default class Driver extends Component {
                 return false;
             }
             const json = await response.json();
+            if ( ! json.routes[0]?.overview_polyline?.points ) {
+                return false;
+            }
             const points = PolyLine.decode(json.routes[0].overview_polyline.points);
             const pointCoords = points.map((point) => {
                 return { latitude: point[0], longitude: point[1] }
@@ -147,7 +150,7 @@ export default class Driver extends Component {
             try {
                 //   console.log(this.state.pointCoords);
 
-                PageCarton.getServerResource({ name: "login-taxiapp" })
+                PageCarton.getServerResource({ name: "authentication", local_request_only: true })
                     .then((userInfo) => {
                         this._isMounted ? this.setState(
                             {
@@ -285,7 +288,7 @@ export default class Driver extends Component {
                 return false;
             }
 
-            PageCarton.getServerResource({ name: "login-taxiapp" })
+            PageCarton.getServerResource({ name: "authentication", local_request_only: true })
                 .then((userInfo) => {
 
                     let newState = {};
@@ -352,7 +355,7 @@ export default class Driver extends Component {
                 return false;
             }
 
-            PageCarton.getServerResource({ name: "login-taxiapp" })
+            PageCarton.getServerResource({ name: "authentication", local_request_only: true })
                 .then((userInfo) => {
                     this._isMounted ? this.setState(
                         {

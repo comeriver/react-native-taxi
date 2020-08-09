@@ -6,6 +6,7 @@ import * as Font from 'expo-font';
 import { createAppContainer, createStackNavigator } from 'react-navigation';
 import HomeScreen from './screens/HomeScreen';
 import Login from './screens/Login';
+import PageCarton from './pagecarton.js'
 
 console.ignoredYellowBox = ['Remote debugger'];
 YellowBox.ignoreWarnings([
@@ -32,14 +33,12 @@ const RootStack = createStackNavigator(
     }
 );
 
-import PageCarton from './pagecarton.js'
-
 const pc = PageCarton.setup(
     {
-        scheme: "https",
-        domain: "flexcab.com.ng",
-        port: "",
-        path: "",
+        scheme: "http",
+        domain: "localhost",
+        port: "8888",
+        path: "/taxi",
     }
 );
 //  How to retrieve posts 
@@ -72,20 +71,27 @@ export default class App extends Component {
     componentDidMount()
     {
         this._isMounted = true;
+
         PageCarton.getServerResource({ 
-            name: "login-taxiapp",
+            name: "authentication",
             expiry: false,
+            local_request_only: true
         }).then((data) => {
             if (! data) {
                 return false;
             }
             if (data.badnews) {
-                alert(data.badnews);
                 return false;
             }
             this.handleChangeToken(data);
         })
 
+        //  retrive site info
+        PageCarton.getServerResource( { url: "Application_SiteInfo" } )
+        .then( site_info => {
+            this._isMounted ? this.setState( { site_info } ) : null
+            console.log( this.state )
+        } ); 
     }
  
     async cacheResourcesAsync() {
@@ -106,6 +112,16 @@ export default class App extends Component {
 
     handleChangeToken(token) {
         let newState = { token }
+        if( ! token )
+        {
+            //  we are logging out
+            PageCarton.getServerResource( { url: "NativeApp_Authenticate_Logout", refresh: true } )
+            .then( data => {
+                //   console.log( data );
+                PageCarton.resetStaticResource( "authentication" );
+
+            } );          
+        }
         if( token.auth_info?.email )
         {
             newState.email = token.auth_info?.email;
